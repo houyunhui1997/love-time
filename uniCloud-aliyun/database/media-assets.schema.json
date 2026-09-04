@@ -1,0 +1,27 @@
+{
+  "bsonType": "object",
+  "description": "用户图片资产",
+  "required": ["ownerUid", "fileId", "mimeType", "width", "height", "size", "status", "createdAt"],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "_id": { "description": "系统主键" },
+    "ownerUid": { "bsonType": "string" },
+    "coupleId": { "bsonType": ["string", "null"] },
+    "fileId": { "bsonType": "string" },
+    "thumbFileId": { "bsonType": ["string", "null"] },
+    "mimeType": { "bsonType": "string", "enum": ["image/jpeg", "image/png", "image/webp"] },
+    "width": { "bsonType": "int", "minimum": 1 },
+    "height": { "bsonType": "int", "minimum": 1 },
+    "size": { "bsonType": "long", "minimum": 1, "maximum": 10485760 },
+    "status": { "bsonType": "string", "enum": ["temporary", "active", "deleted"] },
+    "createdAt": { "bsonType": "long" },
+    "expiresAt": { "bsonType": ["long", "null"] }
+  }
+}
+

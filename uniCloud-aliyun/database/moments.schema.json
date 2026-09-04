@@ -1,0 +1,50 @@
+{
+  "bsonType": "object",
+  "description": "时光轴记录",
+  "required": [
+    "creatorUid",
+    "visibility",
+    "title",
+    "titleCustomized",
+    "content",
+    "mood",
+    "occurredAt",
+    "occurredMonth",
+    "mediaIds",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "revision"
+  ],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "_id": { "description": "系统主键" },
+    "creatorUid": { "bsonType": "string" },
+    "coupleId": { "bsonType": ["string", "null"] },
+    "visibility": { "bsonType": "string", "enum": ["private", "couple"] },
+    "title": { "bsonType": "string", "minLength": 1, "maxLength": 30 },
+    "titleCustomized": { "bsonType": "bool" },
+    "content": { "bsonType": "string", "minLength": 1, "maxLength": 2000 },
+    "mood": { "bsonType": "string", "enum": ["happy", "warm", "calm", "moved", "other"] },
+    "occurredAt": { "bsonType": "long" },
+    "occurredMonth": { "bsonType": "string", "pattern": "^\\d{4}-\\d{2}$" },
+    "mediaIds": {
+      "bsonType": "array",
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": { "bsonType": "string" }
+    },
+    "status": { "bsonType": "string", "enum": ["active", "deleted"] },
+    "createdAt": { "bsonType": "long" },
+    "updatedAt": { "bsonType": "long" },
+    "deletedAt": { "bsonType": ["long", "null"] },
+    "revision": { "bsonType": "int", "minimum": 1 }
+  }
+}
+

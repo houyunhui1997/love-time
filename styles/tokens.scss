@@ -1,0 +1,20 @@
+:root,
+page {
+  --love-color-bg: #fbf7f2;
+  --love-color-surface: #fffdf9;
+  --love-color-primary: #db7470;
+  --love-color-primary-strong: #cf625e;
+  --love-color-primary-soft: #f6d3cc;
+  --love-color-text: #38291f;
+  --love-color-text-secondary: #94877d;
+  --love-color-divider: #eadfd5;
+  --love-color-danger: #b95652;
+  --love-radius-small: 16rpx;
+  --love-radius-medium: 28rpx;
+  --love-radius-large: 44rpx;
+  --love-shadow-soft: 0 16rpx 40rpx rgba(97, 66, 45, 0.08);
+  --love-page-gutter: 48rpx;
+  --love-safe-top: env(safe-area-inset-top);
+  --love-safe-bottom: env(safe-area-inset-bottom);
+}
+

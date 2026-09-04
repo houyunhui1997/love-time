@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <!-- 图标风格：线框、2px描边、圆角端点、玫瑰金 -->
+  <defs>
+    <style>
+      .icon { fill:none; stroke:#C4A095; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    </style>
+  </defs>
+
+  <!-- 1. 恋爱资料 (ID Card) -->
+  <symbol id="icon-profile" viewBox="0 0 24 24">
+    <rect x="2" y="4" width="20" height="16" rx="3" class="icon"/>
+    <circle cx="10" cy="11" r="2.5" class="icon"/>
+    <path d="M6 17c0-2 2-3.5 4-3.5s4 1.5 4 3.5" class="icon"/>
+    <line x1="15" y1="9" x2="19" y2="9" class="icon"/>
+    <line x1="15" y1="13" x2="18" y2="13" class="icon"/>
+  </symbol>
+
+  <!-- 2. 提醒设置 (Bell) -->
+  <symbol id="icon-bell" viewBox="0 0 24 24">
+    <path d="M6 16v-4a6 6 0 0 1 12 0v4" class="icon"/>
+    <path d="M4 16h16v2H4z" class="icon"/>
+    <path d="M10 20c0 1.1.9 2 2 2s2-.9 2-2" class="icon"/>
+    <path d="M12 3v1" class="icon"/>
+  </symbol>
+
+  <!-- 3. 主题外观 (Palette) -->
+  <symbol id="icon-palette" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9" class="icon"/>
+    <circle cx="8.5" cy="9.5" r="1.5" class="icon"/>
+    <circle cx="15.5" cy="9.5" r="1.5" class="icon"/>
+    <circle cx="12" cy="16" r="1.5" class="icon"/>
+    <path d="M12 3a9 9 0 0 1 9 9c0 2.5-2 4-4 4s-2-1.5-2-3" class="icon"/>
+  </symbol>
+
+  <!-- 4. 数据备份与恢复 (Cloud Upload) -->
+  <symbol id="icon-cloud" viewBox="0 0 24 24">
+    <path d="M18 16a4 4 0 0 0 0-8 5 5 0 0 0-9.5-1.5A5 5 0 0 0 4 12a4 4 0 0 0 0 8h14z" class="icon"/>
+    <path d="M12 12v6m-3-3l3-3 3 3" class="icon"/>
+  </symbol>
+
+  <!-- 5. 隐私与协议 (Shield) -->
+  <symbol id="icon-shield" viewBox="0 0 24 24">
+    <path d="M12 3l8 3v6c0 5.5-3.5 10-8 11-4.5-1-8-5.5-8-11V6l8-3z" class="icon"/>
+    <circle cx="12" cy="11" r="2" class="icon"/>
+    <path d="M12 13v3" class="icon"/>
+  </symbol>
+
+  <!-- 6. 账号与数据 (User) -->
+  <symbol id="icon-user" viewBox="0 0 24 24">
+    <circle cx="12" cy="8" r="4" class="icon"/>
+    <path d="M5 20c0-3 3-5 7-5s7 2 7 5" class="icon"/>
+  </symbol>
+
+  <!-- 7. 关于恋时光 (Info) -->
+  <symbol id="icon-info" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9" class="icon"/>
+    <line x1="12" y1="16" x2="12" y2="12" class="icon"/>
+    <circle cx="12" cy="8" r="0.8" fill="#C4A095" stroke="none"/>
+  </symbol>
+</svg>

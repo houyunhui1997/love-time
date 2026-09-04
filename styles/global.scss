@@ -1,0 +1,54 @@
+@import './tokens.scss';
+
+page {
+  min-height: 100%;
+  background: var(--love-color-bg);
+  color: var(--love-color-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 28rpx;
+}
+
+view,
+text,
+image,
+button,
+input,
+textarea,
+scroll-view {
+  box-sizing: border-box;
+}
+
+button::after {
+  border: 0;
+}
+
+.love-page {
+  min-height: 100vh;
+  padding: calc(var(--love-safe-top) + 32rpx) var(--love-page-gutter)
+    calc(var(--love-safe-bottom) + 40rpx);
+  background: var(--love-color-bg);
+}
+
+.love-card {
+  border: 1rpx solid rgba(222, 205, 192, 0.72);
+  border-radius: var(--love-radius-medium);
+  background: var(--love-color-surface);
+  box-shadow: var(--love-shadow-soft);
+}
+
+.love-primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96rpx;
+  border-radius: 48rpx;
+  background: var(--love-color-primary);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.love-muted {
+  color: var(--love-color-text-secondary);
+}
+

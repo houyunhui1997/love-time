@@ -1,0 +1,8 @@
+unpackage/
+.DS_Store
+.hbuilderx/
+uni_modules/uni-config-center/uniCloud/cloudfunctions/common/uni-config-center/uni-id/config.json
+node_modules/
+docs/
+.workbuddy/
+uni_modules/

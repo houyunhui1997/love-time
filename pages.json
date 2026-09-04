@@ -1,0 +1,64 @@
+{
+  "pages": [
+    { "path": "pages/anniversary/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
+    { "path": "pages/onboarding/profile", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/anniversary/list", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/anniversary/edit", "style": { "navigationStyle": "custom", "disableScroll": true } },
+    { "path": "pages/anniversary/detail", "style": { "navigationStyle": "custom", "disableScroll": true } },
+    { "path": "pages/timeline/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/timeline/edit", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/timeline/detail", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/timeline/search", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/profile/index", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/profile/love-profile", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/couple/invite", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/settings/reminder", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/settings/theme", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/settings/backup", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/settings/privacy", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/settings/account", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/settings/about", "style": { "navigationStyle": "custom" } }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "恋时光纪念日",
+    "navigationBarBackgroundColor": "#FBF7F2",
+    "backgroundColor": "#FBF7F2",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#A79A90",
+    "selectedColor": "#DB7470",
+    "backgroundColor": "#FFFCF8",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/anniversary/index",
+        "text": "纪念日",
+        "iconPath": "static/tabbar/anniversary.png",
+        "selectedIconPath": "static/tabbar/anniversary-active.png"
+      },
+      {
+        "pagePath": "pages/timeline/index",
+        "text": "时光轴",
+        "iconPath": "static/tabbar/timeline.png",
+        "selectedIconPath": "static/tabbar/timeline-active.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "static/tabbar/profile.png",
+        "selectedIconPath": "static/tabbar/profile-active.png"
+      }
+    ]
+  },
+  "uniIdRouter": {
+    "loginPage": "pages/profile/index",
+    "needLogin": [
+      "pages/onboarding/profile",
+      "pages/couple/.*",
+      "pages/settings/.*"
+    ],
+    "resToLogin": true
+  }
+}
