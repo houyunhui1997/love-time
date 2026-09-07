@@ -109,12 +109,15 @@
         <text class="fab-label">添加纪念日</text>
       </view>
     </template>
+
+    <LoveLoginDialog v-model="showLoginDialog" @success="onLoginSuccess" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
 import { differenceInCalendarDays, formatBusinessDate, getNextYearlyOccurrence } from '@/utils/date'
 import { getMyLoveProfile, type LoveProfile } from '@/services/profile'
 import { hasValidSession, restoreWeixinSession } from '@/services/auth'
@@ -175,6 +178,7 @@ const recentAnniversaries = ref<AnniversaryItem[]>([])
 const loading = ref(false)
 const empty = ref(false)
 const isLoggedIn = ref(false)
+const showLoginDialog = ref(false)
 
 function mapItem(item: AnniversaryListItem): AnniversaryItem {
   const isYearly = item.repeatType === 'yearly'
@@ -250,8 +254,13 @@ function goToAdd() {
 }
 
 function goToLogin() {
-  uni.setStorageSync('love_open_login_panel', true)
-  uni.switchTab({ url: '/pages/profile/index' })
+  showLoginDialog.value = true
+}
+
+async function onLoginSuccess(loginProfile: LoveProfile) {
+  profile.value = loginProfile
+  isLoggedIn.value = true
+  await loadData()
 }
 </script>
 
@@ -733,7 +742,7 @@ function goToLogin() {
   .hero-section {
     height: 448rpx;
     margin-top: 20rpx;
-    margin-bottom: 0rpx;
+    margin-bottom: 55rpx;
   }
 
   .together-block {

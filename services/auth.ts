@@ -5,6 +5,12 @@ interface UniIdLoginResult {
   newToken: { token: string; tokenExpired: number }
 }
 
+interface UniIdAccountInfoResult {
+  errCode?: number | string
+  errMsg?: string
+  newToken?: { token: string; tokenExpired: number }
+}
+
 interface WeixinLoginParams {
   code: string
   onlyExisting?: boolean
@@ -39,10 +45,33 @@ function saveSession(result: UniIdLoginResult): string {
   return result.uid
 }
 
+function saveRefreshedToken(tokenInfo?: UniIdAccountInfoResult['newToken']): void {
+  if (!tokenInfo?.token) return
+  uni.setStorageSync('uni_id_token', tokenInfo.token)
+  uni.setStorageSync('uni_id_token_expired', tokenInfo.tokenExpired)
+}
+
 function isAccountNotFound(error: any): boolean {
   const code = String(error?.errCode || error?.code || '')
   const message = String(error?.errMsg || error?.message || '')
   return ACCOUNT_NOT_FOUND_CODES.includes(code) || /account-not-exists|账号未注册/i.test(message)
+}
+
+function isSessionInvalid(error: any): boolean {
+  if (isAccountNotFound(error)) return true
+  const code = String(error?.errCode || error?.code || '')
+  const message = String(error?.errMsg || error?.message || '')
+  return /uni-id-(token-expired|check-token-failed|account-banned|unauthorized)/i.test(code)
+    || /token.*(失效|过期|校验.*失败|invalid|expired)|账号.*(禁用|不存在)/i.test(message)
+}
+
+async function validateCurrentSession(): Promise<void> {
+  const uniIdCo = uniCloud.importObject('uni-id-co', { customUI: true }) as {
+    getAccountInfo(): Promise<UniIdAccountInfoResult>
+  }
+  const result = await uniIdCo.getAccountInfo()
+  if (result?.errCode) throw result
+  saveRefreshedToken(result?.newToken)
 }
 
 async function requestWeixinLogin(onlyExisting: boolean): Promise<string> {
@@ -73,27 +102,51 @@ export async function loginByWeixin(): Promise<string> {
 }
 
 /**
- * 恢复微信会话：本地 Token 可用时直接复用；否则只登录数据库中
- * 已存在的 OpenID。新用户保持游客状态，不会在启动阶段被自动注册。
+ * 恢复微信会话：本地 Token 仅作为候选凭证，必须通过云端账户校验；
+ * Token 失效时再尝试通过 OpenID 恢复数据库中的已有账号。
+ * 新用户保持游客状态，不会在启动阶段被自动注册。
  */
 export function restoreWeixinSession(): Promise<boolean> {
-  if (hasValidSession()) {
-    restoreChecked = true
-    return Promise.resolve(true)
-  }
-
-  if (restoreChecked) return Promise.resolve(false)
   if (restorePromise) return restorePromise
 
-  clearSession(false)
-  restorePromise = requestWeixinLogin(true)
-    .then(() => true)
-    .catch(error => {
-      if (!isAccountNotFound(error)) console.warn('微信自动登录失败', error)
-      return false
-    })
-    .finally(() => {
+  restorePromise = (async () => {
+    const hadLocalToken = Boolean(uni.getStorageSync('uni_id_token'))
+    let shouldTryExistingOpenId = !restoreChecked || hadLocalToken
+
+    if (hasValidSession()) {
+      try {
+        await validateCurrentSession()
+        restoreChecked = true
+        return true
+      } catch (error) {
+        if (!isSessionInvalid(error)) {
+          console.warn('登录状态云端校验失败', error)
+          return false
+        }
+
+        clearSession(false)
+        shouldTryExistingOpenId = true
+      }
+    } else {
+      clearSession(false)
+    }
+
+    if (!shouldTryExistingOpenId) return false
+
+    try {
+      await requestWeixinLogin(true)
       restoreChecked = true
+      return true
+    } catch (error) {
+      if (isSessionInvalid(error)) {
+        restoreChecked = true
+      } else {
+        console.warn('微信自动登录失败', error)
+      }
+      return false
+    }
+  })()
+    .finally(() => {
       restorePromise = null
     })
 
