@@ -6,7 +6,7 @@
       <view class="dialog-heading">
         <image
           class="heading-emblem"
-          src="/static/login/login-heart-emblem.png"
+          src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-heart-emblem.png"
           mode="aspectFit"
         />
         <text class="dialog-title">登录恋时光</text>
@@ -15,7 +15,7 @@
 
       <button class="avatar-picker" open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
         <image v-if="avatarTempPath" class="avatar-image" :src="avatarTempPath" mode="aspectFill" />
-        <image v-else class="avatar-placeholder-art" src="/static/login/login-avatar-couple.png" mode="aspectFit" />
+        <image v-else class="avatar-placeholder-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-avatar-couple.png" mode="aspectFit" />
         <view class="camera-badge">
           <uni-icons type="camera-filled" size="17" color="#ffffff" />
         </view>
@@ -180,7 +180,7 @@ async function confirmLogin() {
   background-color: #fcf7f1;
   background-image:
     radial-gradient(circle at 50% 3%, rgba(255, 255, 255, 0.82), transparent 40%),
-    url('/static/profile/slices/archive-paper-texture-tile.png');
+    url('https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/slices/archive-paper-texture-tile.png');
   background-position: center top, left top;
   background-repeat: no-repeat, repeat;
   background-size: 100% 100%, 256rpx 256rpx;

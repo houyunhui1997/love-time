@@ -2,7 +2,7 @@
   <view class="profile-page">
 
     <view class="archive-card">
-      <image class="archive-art" src="/static/profile/love-archive-paper-art.png" mode="aspectFill" />
+      <image class="archive-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/love-archive-paper-art.png" mode="aspectFill" />
       <text class="archive-heading">我们的恋爱档案</text>
       <image v-if="leftAvatar" class="portrait portrait-left" :src="leftAvatar" mode="aspectFill" />
       <image v-if="rightAvatar" class="portrait portrait-right" :src="rightAvatar" mode="aspectFill" />

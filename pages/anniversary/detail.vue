@@ -32,7 +32,7 @@
       <view class="hero-illustration">
         <image
           class="heart-art"
-          src="/static/anniversary/heart-detail.png"
+          src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/heart-detail.png"
           mode="aspectFit"
         />
       </view>
@@ -116,9 +116,9 @@ const today = formatBusinessDate(new Date())
 
 const typeIconSrc = computed(() => {
   const iconMap = {
-    birthday: '/static/anniversary/birthday-cake.png',
-    countdown: '/static/anniversary/countdown-day.png',
-    anniversary: '/static/anniversary/anniversary-heart.png'
+    birthday: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/birthday-cake.png',
+    countdown: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/countdown-day.png',
+    anniversary: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/anniversary-heart.png'
   } as const
 
   return iconMap[anniversary.value?.eventType || 'anniversary'] || iconMap.anniversary

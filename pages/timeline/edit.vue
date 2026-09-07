@@ -22,7 +22,7 @@
       <view class="flower-deco">
         <image
           class="flower-small"
-          src="/static/anniversary/flower-small.png"
+          src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/flower-decoration.png"
           mode="aspectFit"
         />
       </view>

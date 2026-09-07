@@ -16,7 +16,7 @@
     <view v-if="!isLoggedIn" class="guest-home">
       <image
         class="guest-hero-art"
-        src="/static/home/empty-hero-memory-book.png"
+        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-hero-memory-book.png"
         mode="aspectFit"
       />
       <text class="guest-heading">从今天开始，记录我们的故事</text>
@@ -40,7 +40,7 @@
         <view class="hero-illustration">
           <image
             class="couple-art"
-            src="/static/anniversary/couple-silhouette.png"
+            src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/couple-silhouette.png"
             mode="aspectFit"
           />
         </view>
@@ -84,7 +84,7 @@
       <view v-else-if="!loading" class="empty-anniversary-card">
         <image
           class="empty-calendar-art"
-          src="/static/home/empty-calendar-heart.png"
+          src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-calendar-heart.png"
           mode="aspectFit"
         />
         <view class="empty-card-copy">
@@ -98,7 +98,7 @@
       <view v-if="!empty" class="bottom-decoration">
         <image
           class="flower-decoration"
-          src="/static/anniversary/flower-decoration.png"
+          src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/flower-decoration.png"
           mode="aspectFit"
         />
       </view>
@@ -186,9 +186,9 @@ function mapItem(item: AnniversaryListItem): AnniversaryItem {
   const daysLeft = Math.max(0, differenceInCalendarDays(nextDate, today))
 
   const iconMap: Record<string, string> = {
-    birthday: '/static/anniversary/birthday-cake.png',
-    countdown: '/static/anniversary/countdown-day.png',
-    anniversary: '/static/anniversary/anniversary-heart.png'
+    birthday: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/birthday-cake.png',
+    countdown: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/countdown-day.png',
+    anniversary: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/anniversary-heart.png'
   }
 
   return {

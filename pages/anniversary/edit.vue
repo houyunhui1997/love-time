@@ -19,7 +19,7 @@
     <view class="hero-decoration">
       <image
         class="hero-decoration-image"
-        src="/static/anniversary/top-couple-floral-vignette.png"
+        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/top-couple-floral-vignette.png"
         mode="aspectFit"
       />
     </view>
@@ -122,7 +122,7 @@
 
     <image
       class="bottom-decoration"
-      src="/static/anniversary/bottom-left-floral-sprig.png"
+      src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/bottom-left-floral-sprig.png"
       mode="aspectFit"
     />
 

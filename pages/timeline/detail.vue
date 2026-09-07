@@ -29,7 +29,7 @@
         <text class="moment-title">{{ moment.title }}</text>
         <image
           class="flower-icon"
-          src="/static/anniversary/flower-small.png"
+          src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/flower-decoration.png"
           mode="aspectFit"
         />
       </view>
@@ -63,7 +63,7 @@
     <view class="bottom-decoration">
       <image
         class="flower-decoration"
-        src="/static/anniversary/flower-decoration.png"
+        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/flower-decoration.png"
         mode="aspectFit"
       />
     </view>
