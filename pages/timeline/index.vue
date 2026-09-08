@@ -101,12 +101,15 @@
         </scroll-view>
       </view>
     </view>
+
+    <LoveLoading :visible="loading" fullscreen text="正在加载时光" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import LoveLoading from '@/components/base/LoveLoading.vue'
 import { listMoments, type MomentListItem } from '@/services/moment'
 import { getTempFileUrls } from '@/services/media'
 

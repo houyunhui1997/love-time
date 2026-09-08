@@ -53,7 +53,8 @@
         </view>
       </view>
 
-      <button class="login-button" :loading="submitting" :disabled="submitting" @tap="confirmLogin">
+      <button class="login-button" :disabled="submitting" @tap="confirmLogin">
+        <LoveLoading v-if="submitting" size="mini" text="" :mask="false" />
         <text class="login-button-label" :class="{ spaced: !submitting }">
           {{ submitting ? '正在登录…' : '登录' }}
         </text>
@@ -65,8 +66,9 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
+import LoveLoading from '@/components/base/LoveLoading.vue'
 import { loginByWeixin } from '@/services/auth'
-import { saveMyLoginProfile, type LoveProfile } from '@/services/profile'
+import { saveMyLoginProfile, type AccountProfile } from '@/services/profile'
 
 type Gender = 'male' | 'female'
 
@@ -76,7 +78,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void
-  (event: 'success', profile: LoveProfile): void
+  (event: 'success', account: AccountProfile): void
 }>()
 
 const submitting = ref(false)
@@ -136,12 +138,12 @@ async function confirmLogin() {
   try {
     const uid = await loginByWeixin()
     const avatarFileId = await uploadAvatar(uid)
-    const profile = await saveMyLoginProfile({
+    const account = await saveMyLoginProfile({
       gender: selectedGender.value,
       nickname: nickname.value.trim(),
       avatarFileId
     })
-    emit('success', profile)
+    emit('success', account)
     emit('update:modelValue', false)
     resetForm()
     uni.showToast({ title: '登录成功', icon: 'success' })

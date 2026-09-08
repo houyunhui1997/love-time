@@ -21,11 +21,7 @@
     </view>
 
     <scroll-view class="list-scroll" scroll-y :show-scrollbar="false">
-      <view v-if="loading && !allItems.length" class="state-panel">
-        <text class="state-text">正在加载纪念日...</text>
-      </view>
-
-      <view v-else-if="!groupedItems.length" class="state-panel empty-panel">
+      <view v-if="!loading && !groupedItems.length" class="state-panel empty-panel">
         <image class="empty-image" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-calendar-heart.png" mode="aspectFit" />
         <text class="empty-title">还没有纪念日</text>
         <text class="state-text">去添加一个值得珍藏的日子吧</text>
@@ -71,12 +67,15 @@
     <view class="add-fab" aria-label="添加纪念日" @tap="goToAdd">
       <text class="add-symbol">＋</text>
     </view>
+
+    <LoveLoading :visible="loading && !allItems.length" fullscreen text="正在加载纪念日" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import LoveLoading from '@/components/base/LoveLoading.vue'
 import { listAnniversaries, type AnniversaryListItem } from '@/services/anniversary'
 import { restoreWeixinSession } from '@/services/auth'
 import {

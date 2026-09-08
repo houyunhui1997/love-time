@@ -114,8 +114,9 @@
 
     <!-- 底部按钮 -->
     <view class="action-area">
-      <button class="save-button" :loading="saving" @tap="onSave">
-        {{ saving ? '保存中...' : '保存纪念日' }}
+      <button class="save-button" :disabled="saving" @tap="onSave">
+        <LoveLoading v-if="saving" size="mini" text="" :mask="false" />
+        <text>{{ saving ? '保存中...' : '保存纪念日' }}</text>
       </button>
       <text class="save-tip">保存后将在首页和时光轴中显示</text>
     </view>
@@ -195,6 +196,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import LoveLoading from '@/components/base/LoveLoading.vue'
 import { formatBusinessDate } from '@/utils/date'
 import type { AnniversaryType, AnniversaryRepeat } from '@/types/domain'
 import { createAnniversary, updateAnniversary, getAnniversary } from '@/services/anniversary'
@@ -640,6 +642,7 @@ async function onSave() {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 12rpx;
   width: 458rpx;
   height: 86rpx;
   padding: 0;

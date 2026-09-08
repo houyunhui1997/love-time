@@ -1,7 +1,7 @@
 'use strict'
 
 const uniIdCommon = require('uni-id-common')
-const { success, normalizeError, AppError, API_CODE } = require('love-common')
+const { success, normalizeError, AppError, API_CODE, requireString } = require('love-common')
 const db = uniCloud.database()
 const dbCmd = db.command
 const profiles = db.collection('love-profiles')
@@ -13,14 +13,49 @@ async function requireAuth(context) {
   return auth
 }
 
-function toClientProfile(profile) {
+function normalizeGender(value) {
+  if (value === 'male' || value === 1) return 'male'
+  if (value === 'female' || value === 2) return 'female'
+  return null
+}
+
+function toClientAccount(user) {
   return {
+    nickname: user.nickname || '',
+    avatarFileId: user.avatar || null,
+    gender: normalizeGender(user.gender)
+  }
+}
+
+function toClientProfile(profile) {
+  if (!profile) return null
+  return {
+    _id: profile._id,
     selfName: profile.selfName,
     partnerName: profile.partnerName,
     loveStartDate: profile.loveStartDate,
-    selfGender: profile.selfGender || null,
-    selfAvatarFileId: profile.selfAvatarFileId || null
+    selfGender: profile.selfGender,
+    selfAvatarFileId: profile.selfAvatarFileId || null,
+    partnerAvatarFileId: profile.partnerAvatarFileId || null,
+    revision: profile.revision || 1
   }
+}
+
+function validateDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new AppError(API_CODE.INVALID_PARAMS, '在一起日期格式不正确')
+  }
+
+  const [year, month, day] = value.split('-').map(Number)
+  const parsed = new Date(Date.UTC(year, month - 1, day))
+  const isRealDate = parsed.getUTCFullYear() === year
+    && parsed.getUTCMonth() === month - 1
+    && parsed.getUTCDate() === day
+  if (!isRealDate) throw new AppError(API_CODE.INVALID_PARAMS, '在一起日期不正确')
+
+  const chinaToday = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  if (value > chinaToday) throw new AppError(API_CODE.INVALID_PARAMS, '在一起日期不能晚于今天')
+  return value
 }
 
 module.exports = {
@@ -28,38 +63,30 @@ module.exports = {
     this.uniIdCommon = uniIdCommon.createInstance({ clientInfo: this.getClientInfo() })
   },
 
-  async getMine() {
+  async getAccount() {
     try {
       const auth = await requireAuth(this)
-
-      const existing = await profiles.where({ ownerUid: auth.uid }).limit(1).get()
-      let profile = existing.data[0]
-      if (!profile) {
-        const now = Date.now()
-        const defaults = {
-          ownerUid: auth.uid,
-          coupleId: null,
-          selfName: '小鹿',
-          partnerName: '阿川',
-          selfAvatarFileId: null,
-          selfGender: null,
-          partnerAvatarFileId: null,
-          loveStartDate: '2025-03-31',
-          theme: 'warm-paper',
-          createdAt: now,
-          updatedAt: now,
-          revision: 1
-        }
-        const inserted = await profiles.add(defaults)
-        profile = { _id: inserted.id, ...defaults }
-      }
-
-      return success(toClientProfile(profile))
+      const result = await users.doc(auth.uid).get()
+      const user = result.data && result.data[0]
+      if (!user) throw new AppError(API_CODE.NOT_FOUND, '账号不存在')
+      return success(toClientAccount(user))
     } catch (error) {
       return normalizeError(error)
     }
   },
 
+  // 查询必须是只读操作；没有档案时明确返回 null。
+  async getMine() {
+    try {
+      const auth = await requireAuth(this)
+      const existing = await profiles.where({ ownerUid: auth.uid }).limit(1).get()
+      return success(toClientProfile(existing.data[0] || null))
+    } catch (error) {
+      return normalizeError(error)
+    }
+  },
+
+  // 登录只维护账号资料，不再创建带默认值的恋爱档案。
   async saveLoginProfile(params = {}) {
     try {
       const auth = await requireAuth(this)
@@ -70,43 +97,75 @@ module.exports = {
       if (!['male', 'female'].includes(gender)) throw new AppError(API_CODE.INVALID_PARAMS, '请选择性别')
       if (!nickname || nickname.length > 20) throw new AppError(API_CODE.INVALID_PARAMS, '请输入1至20个字符的昵称')
 
-      const existing = await profiles.where({ ownerUid: auth.uid }).limit(1).get()
-      const now = Date.now()
-      let profile
-      if (existing.data[0]) {
-        const updateData = {
-          selfName: nickname,
-          selfGender: gender,
-          selfAvatarFileId: avatarFileId,
-          updatedAt: now,
-          revision: dbCmd.inc(1)
-        }
-        await profiles.doc(existing.data[0]._id).update(updateData)
-        profile = { ...existing.data[0], ...updateData, revision: (existing.data[0].revision || 0) + 1 }
-      } else {
-        profile = {
-          ownerUid: auth.uid,
-          coupleId: null,
-          selfName: nickname,
-          partnerName: 'TA',
-          selfAvatarFileId: avatarFileId,
-          partnerAvatarFileId: null,
-          selfGender: gender,
-          loveStartDate: '2025-03-31',
-          theme: 'warm-paper',
-          createdAt: now,
-          updatedAt: now,
-          revision: 1
-        }
-        const inserted = await profiles.add(profile)
-        profile._id = inserted.id
+      const userUpdate = {
+        nickname,
+        gender: gender === 'male' ? 1 : 2
       }
-
-      const userUpdate = { nickname, gender: gender === 'male' ? 1 : 2 }
       if (avatarFileId) userUpdate.avatar = avatarFileId
       await users.doc(auth.uid).update(userUpdate)
 
-      return success(toClientProfile(profile))
+      return success({ nickname, gender, avatarFileId })
+    } catch (error) {
+      return normalizeError(error)
+    }
+  },
+
+  // 首次填写时创建；后续再次保存时更新同一份档案。
+  async saveLoveProfile(params = {}) {
+    try {
+      const auth = await requireAuth(this)
+      const selfName = requireString(params.selfName, '我的称呼', { maxLength: 12 })
+      const partnerName = requireString(params.partnerName, '对方称呼', { maxLength: 12 })
+      const loveStartDate = validateDate(params.loveStartDate)
+      const partnerAvatarFileId = typeof params.partnerAvatarFileId === 'string' && params.partnerAvatarFileId
+        ? params.partnerAvatarFileId
+        : null
+
+      const userResult = await users.doc(auth.uid).get()
+      const user = userResult.data && userResult.data[0]
+      if (!user) throw new AppError(API_CODE.NOT_FOUND, '账号不存在')
+      const selfGender = normalizeGender(user.gender)
+      if (!selfGender) throw new AppError(API_CODE.INVALID_PARAMS, '请先完善账号性别')
+
+      const existingResult = await profiles.where({ ownerUid: auth.uid }).limit(1).get()
+      const existing = existingResult.data[0]
+      const now = Date.now()
+
+      if (existing) {
+        const updateData = {
+          selfName,
+          partnerName,
+          loveStartDate,
+          selfGender,
+          selfAvatarFileId: user.avatar || null,
+          partnerAvatarFileId,
+          updatedAt: now,
+          revision: dbCmd.inc(1)
+        }
+        await profiles.doc(existing._id).update(updateData)
+        return success(toClientProfile({
+          ...existing,
+          ...updateData,
+          revision: (existing.revision || 0) + 1
+        }))
+      }
+
+      const profile = {
+        ownerUid: auth.uid,
+        coupleId: null,
+        selfName,
+        partnerName,
+        selfAvatarFileId: user.avatar || null,
+        selfGender,
+        partnerAvatarFileId,
+        loveStartDate,
+        theme: 'warm-paper',
+        createdAt: now,
+        updatedAt: now,
+        revision: 1
+      }
+      const inserted = await profiles.add(profile)
+      return success(toClientProfile({ _id: inserted.id, ...profile }))
     } catch (error) {
       return normalizeError(error)
     }

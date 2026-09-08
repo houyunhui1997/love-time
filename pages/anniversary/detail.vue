@@ -74,17 +74,21 @@
       <button class="edit-button" @tap="goToEdit">编辑纪念日</button>
       <button class="delete-button" @tap="onDelete">删除纪念日</button>
     </view>
+
+    <LoveLoading :visible="loading" fullscreen text="正在加载纪念日" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
+import LoveLoading from '@/components/base/LoveLoading.vue'
 import { differenceInCalendarDays, formatBusinessDate, getNextYearlyOccurrence } from '@/utils/date'
 import { getAnniversary, removeAnniversary, type AnniversaryListItem } from '@/services/anniversary'
 
 const anniversary = ref<AnniversaryListItem | null>(null)
 const loading = ref(false)
+const anniversaryId = ref('')
 
 const systemInfo = uni.getSystemInfoSync()
 
@@ -177,20 +181,33 @@ const reminderLabel = computed(() => {
   return offsets.map(d => map[d] || `提前 ${d} 天`).join('、')
 })
 
-onLoad(async (options) => {
-  if (!options?.id) {
-    uni.showToast({ title: '参数错误', icon: 'none' })
-    return
-  }
+async function loadAnniversaryDetail() {
+  if (!anniversaryId.value || loading.value) return
+
   loading.value = true
   try {
-    anniversary.value = await getAnniversary(options.id)
+    anniversary.value = await getAnniversary(anniversaryId.value)
   } catch (error) {
     const message = error instanceof Error ? error.message : '纪念日加载失败'
     uni.showToast({ title: message, icon: 'none' })
   } finally {
     loading.value = false
   }
+}
+
+onLoad((options) => {
+  if (!options?.id) {
+    uni.showToast({ title: '参数错误', icon: 'none' })
+    return
+  }
+
+  anniversaryId.value = options.id
+})
+
+// 编辑页保存后通过 navigateBack 返回时，详情页不会再次触发 onLoad，
+// 因此在每次重新显示页面时从数据库获取最新数据。
+onShow(() => {
+  void loadAnniversaryDetail()
 })
 
 function goBack() {

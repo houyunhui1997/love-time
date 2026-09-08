@@ -1,7 +1,7 @@
 <template>
   <view class="profile-page">
 
-    <view class="archive-card">
+    <view v-if="isLoggedIn && profile" class="archive-card">
       <image class="archive-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/love-archive-paper-art.png" mode="aspectFill" />
       <text class="archive-heading">我们的恋爱档案</text>
       <image v-if="leftAvatar" class="portrait portrait-left" :src="leftAvatar" mode="aspectFill" />
@@ -15,6 +15,12 @@
       </view>
     </view>
 
+    <view v-else-if="isLoggedIn" class="profile-incomplete-card">
+      <text class="profile-incomplete-title">恋爱档案尚未建立</text>
+      <text class="profile-incomplete-copy">填写双方称呼和在一起日期后，这里才会展示真实的恋爱档案。</text>
+      <button class="profile-incomplete-button" @tap="openLoveProfile">去填写资料</button>
+    </view>
+
     <view v-if="!isLoggedIn" class="guest-panel">
       <button class="wechat-button" @tap="openLoginPanel">
         <uni-icons type="weixin" size="26" color="#ffffff" />
@@ -25,7 +31,7 @@
 
     <template v-else>
       <view v-for="(group, groupIndex) in menuGroups" :key="groupIndex" class="menu-group" :class="{ secondary: groupIndex === 1 }">
-        <view v-for="(item, index) in group" :key="item.label" class="menu-row" :class="{ divided: index > 0 }" @tap="placeholder(item.label)">
+        <view v-for="(item, index) in group" :key="item.label" class="menu-row" :class="{ divided: index > 0 }" @tap="openMenu(item.label)">
           <uni-icons :type="item.icon" size="27" :color="groupIndex === 0 ? '#dd7772' : '#aa8f7a'" />
           <text class="menu-label">{{ item.label }}</text>
           <uni-icons class="row-arrow" type="right" size="20" color="#b3a69c" />
@@ -38,27 +44,33 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
 import { differenceInCalendarDays, formatBusinessDate } from '@/utils/date'
 import { clearSession, restoreWeixinSession } from '@/services/auth'
-import { getMyLoveProfile, type LoveProfile } from '@/services/profile'
+import { getMyLoveProfile, type AccountProfile, type LoveProfile } from '@/services/profile'
 
 const isLoggedIn = ref(false)
 const showLoginPanel = ref(false)
-const profile = reactive<LoveProfile>({ selfName: '我', partnerName: 'TA', loveStartDate: '2025-03-31', selfGender: null, selfAvatarFileId: null })
+const profile = ref<LoveProfile | null>(null)
 const menuGroups = [
   [{ label: '恋爱资料', icon: 'contact' }, { label: '提醒设置', icon: 'notification' }, { label: '主题外观', icon: 'color' }],
   [{ label: '数据备份与恢复', icon: 'cloud-upload' }, { label: '隐私与协议', icon: 'locked' }, { label: '账号与数据', icon: 'person' }, { label: '关于恋时光', icon: 'info' }]
 ]
 const today = formatBusinessDate(new Date())
-const togetherDays = computed(() => Math.max(0, differenceInCalendarDays(today, profile.loveStartDate)))
-const displayStartDate = computed(() => profile.loveStartDate.replace(/-/g, '.'))
-const leftName = computed(() => profile.selfGender === 'female' ? profile.partnerName : profile.selfName)
-const rightName = computed(() => profile.selfGender === 'female' ? profile.selfName : profile.partnerName)
-const leftAvatar = computed(() => profile.selfGender === 'male' ? profile.selfAvatarFileId : '')
-const rightAvatar = computed(() => profile.selfGender === 'female' ? profile.selfAvatarFileId : '')
+const togetherDays = computed(() => profile.value ? Math.max(0, differenceInCalendarDays(today, profile.value.loveStartDate)) : 0)
+const displayStartDate = computed(() => profile.value?.loveStartDate.replace(/-/g, '.') || '')
+const leftName = computed(() => profile.value?.selfGender === 'female' ? profile.value.partnerName : profile.value?.selfName || '')
+const rightName = computed(() => profile.value?.selfGender === 'female' ? profile.value.selfName : profile.value?.partnerName || '')
+const leftAvatar = computed(() => {
+  if (!profile.value) return ''
+  return profile.value.selfGender === 'male' ? profile.value.selfAvatarFileId : profile.value.partnerAvatarFileId
+})
+const rightAvatar = computed(() => {
+  if (!profile.value) return ''
+  return profile.value.selfGender === 'female' ? profile.value.selfAvatarFileId : profile.value.partnerAvatarFileId
+})
 
 onShow(async () => {
   const shouldOpenLoginPanel = Boolean(uni.getStorageSync('love_open_login_panel'))
@@ -66,12 +78,13 @@ onShow(async () => {
 
   isLoggedIn.value = await restoreWeixinSession()
   if (!isLoggedIn.value) {
+    profile.value = null
     if (shouldOpenLoginPanel) showLoginPanel.value = true
     return
   }
 
   try {
-    Object.assign(profile, await getMyLoveProfile())
+    profile.value = await getMyLoveProfile()
   } catch (error) {
     const message = error instanceof Error ? error.message : '档案读取失败'
     if (message.includes('登录状态')) {
@@ -85,12 +98,22 @@ onShow(async () => {
 
 function openLoginPanel() { showLoginPanel.value = true }
 
-function onLoginSuccess(loginProfile: LoveProfile) {
-  Object.assign(profile, loginProfile)
+function onLoginSuccess(_account: AccountProfile) {
   isLoggedIn.value = true
+  openLoveProfile()
 }
 
-function placeholder(label: string) { uni.showToast({ title: `${label}将在后续版本开放`, icon: 'none' }) }
+function openLoveProfile() {
+  uni.navigateTo({ url: profile.value ? '/pages/profile/love-profile' : '/pages/onboarding/profile' })
+}
+
+function openMenu(label: string) {
+  if (label === '恋爱资料') {
+    openLoveProfile()
+    return
+  }
+  uni.showToast({ title: `${label}将在后续版本开放`, icon: 'none' })
+}
 </script>
 
 <style scoped lang="scss">
@@ -117,6 +140,11 @@ function placeholder(label: string) { uni.showToast({ title: `${label}将在后�
 .guest-panel { margin-top: 42rpx; padding: 42rpx 28rpx; border: 1rpx solid rgba(223,213,205,.92); border-radius: 30rpx; background: rgba(255,255,255,.72); text-align: center; }
 .wechat-button { display: flex; height: 94rpx; align-items: center; justify-content: center; gap: 14rpx; border-radius: 47rpx; background: linear-gradient(135deg, #df7d78, #d86e69); box-shadow: 0 16rpx 34rpx rgba(216,110,105,.2); color: #fff; font-size: 30rpx; font-weight: 600; }
 .guest-tip { display: block; margin-top: 22rpx; color: #aa9a8f; font-size: 23rpx; }
+.profile-incomplete-card { margin-top: 34rpx; padding: 52rpx 38rpx; border: 1rpx solid rgba(223,213,205,.92); border-radius: 30rpx; background: rgba(255,255,255,.72); text-align: center; box-shadow: 0 10rpx 26rpx rgba(84,59,43,.06); }
+.profile-incomplete-title { display: block; color: #59483d; font-size: 32rpx; font-weight: 600; }
+.profile-incomplete-copy { display: block; margin-top: 18rpx; color: #998579; font-size: 24rpx; line-height: 1.6; }
+.profile-incomplete-button { display: flex; width: 360rpx; height: 76rpx; align-items: center; justify-content: center; margin: 32rpx auto 0; padding: 0; border: 0; border-radius: 39rpx; background: linear-gradient(135deg,#df7d78,#d86e69); color: #fff; font-size: 27rpx; line-height: 76rpx; }
+.profile-incomplete-button::after { border: 0; }
 .menu-group { margin-top: 38rpx; padding: 0 28rpx; border: 1rpx solid rgba(223,213,205,.82); border-radius: 28rpx; background: rgba(255,255,255,.72); }
 .menu-group + .menu-group { margin-top: 24rpx; }
 .menu-row { position: relative; display: flex; height: 100rpx; align-items: center; }

@@ -26,7 +26,7 @@
       </button>
     </view>
 
-    <template v-else>
+    <template v-else-if="profile">
       <!-- 主视觉区 -->
       <view class="hero-section">
         <view class="together-block">
@@ -110,7 +110,19 @@
       </view>
     </template>
 
+    <view v-else-if="!loading" class="profile-setup-home">
+      <image
+        class="profile-setup-art"
+        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-hero-memory-book.png"
+        mode="aspectFit"
+      />
+      <text class="profile-setup-title">建立你们的恋爱档案</text>
+      <text class="profile-setup-copy">填写双方称呼和在一起日期后，首页才会开始记录相伴时光</text>
+      <button class="profile-setup-button" @tap="goToProfileSetup">去填写资料</button>
+    </view>
+
     <LoveLoginDialog v-model="showLoginDialog" @success="onLoginSuccess" />
+    <LoveLoading :visible="loading" fullscreen text="正在加载纪念日" />
   </view>
 </template>
 
@@ -118,8 +130,9 @@
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
+import LoveLoading from '@/components/base/LoveLoading.vue'
 import { differenceInCalendarDays, formatBusinessDate, getNextYearlyOccurrence } from '@/utils/date'
-import { getMyLoveProfile, type LoveProfile } from '@/services/profile'
+import { getMyLoveProfile, type AccountProfile, type LoveProfile } from '@/services/profile'
 import { hasValidSession, restoreWeixinSession } from '@/services/auth'
 import { listAnniversaries, type AnniversaryListItem } from '@/services/anniversary'
 
@@ -202,7 +215,10 @@ function mapItem(item: AnniversaryListItem): AnniversaryItem {
 }
 
 async function loadData() {
-  if (!hasValidSession()) return
+  if (!hasValidSession()) {
+    loading.value = false
+    return
+  }
   loading.value = true
   try {
     profile.value = await getMyLoveProfile()
@@ -232,10 +248,12 @@ async function loadData() {
 }
 
 onShow(async () => {
+  loading.value = true
   isLoggedIn.value = await restoreWeixinSession()
   if (!isLoggedIn.value) {
     recentAnniversaries.value = []
     empty.value = false
+    loading.value = false
     return
   }
   await loadData()
@@ -257,10 +275,14 @@ function goToLogin() {
   showLoginDialog.value = true
 }
 
-async function onLoginSuccess(loginProfile: LoveProfile) {
-  profile.value = loginProfile
+async function onLoginSuccess(_account: AccountProfile) {
   isLoggedIn.value = true
   await loadData()
+  if (!profile.value) goToProfileSetup()
+}
+
+function goToProfileSetup() {
+  uni.navigateTo({ url: '/pages/onboarding/profile' })
 }
 </script>
 
@@ -327,6 +349,26 @@ async function onLoginSuccess(loginProfile: LoveProfile) {
   display: block;
   text-align: center;
 }
+
+/* 已登录但尚未建立恋爱档案 */
+.profile-setup-home {
+  position: absolute;
+  top: calc(var(--menu-top) + var(--menu-height));
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 70rpx 64rpx 0;
+  text-align: center;
+}
+
+.profile-setup-art { width: 450rpx; height: 390rpx; }
+.profile-setup-title { margin-top: 24rpx; color: #59483d; font-size: 35rpx; font-weight: 600; }
+.profile-setup-copy { max-width: 540rpx; margin-top: 18rpx; color: #987f70; font-size: 25rpx; line-height: 1.65; }
+.profile-setup-button { display: flex; width: 410rpx; height: 82rpx; align-items: center; justify-content: center; margin-top: 38rpx; padding: 0; border: 0; border-radius: 42rpx; background: linear-gradient(135deg,#ea817b,#da6968); box-shadow: 0 12rpx 28rpx rgba(207,100,96,.22); color: #fff; font-size: 29rpx; line-height: 82rpx; }
+.profile-setup-button::after { border: 0; }
 
 .guest-heading {
   margin-top: 14rpx;

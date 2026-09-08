@@ -7,6 +7,7 @@ export interface LoveProfile {
   coupleId: string | null
   selfName: string
   partnerName: string
+  selfGender: 'male' | 'female'
   selfAvatarFileId: string | null
   partnerAvatarFileId: string | null
   loveStartDate: string
@@ -61,4 +62,3 @@ export interface Moment {
   deletedAt: number | null
   revision: number
 }
-

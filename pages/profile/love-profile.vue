@@ -1,8 +1,7 @@
 <template>
-  <PageScaffold title="恋爱资料" show-back />
+  <LoveProfileEditor mode="edit" />
 </template>
 
 <script setup lang="ts">
-import PageScaffold from '@/components/base/PageScaffold.vue'
+import LoveProfileEditor from '@/components/profile/LoveProfileEditor.vue'
 </script>
-

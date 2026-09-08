@@ -76,12 +76,15 @@
       </view>
       <text class="delete-text" @tap="onDelete">删除</text>
     </view>
+
+    <LoveLoading :visible="loading" fullscreen text="正在加载时光" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import LoveLoading from '@/components/base/LoveLoading.vue'
 import { getMoment, removeMoment, type MomentListItem } from '@/services/moment'
 import { getTempFileUrls } from '@/services/media'
 

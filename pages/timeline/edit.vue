@@ -93,8 +93,9 @@
 
     <!-- 保存按钮 -->
     <view class="action-area">
-      <button class="save-button" :loading="saving" @tap="onSave">
-        {{ saving ? '保存中...' : '保存这段时光' }}
+      <button class="save-button" :disabled="saving" @tap="onSave">
+        <LoveLoading v-if="saving" size="mini" text="" :mask="false" />
+        <text>{{ saving ? '保存中...' : '保存这段时光' }}</text>
       </button>
     </view>
 
@@ -134,6 +135,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import LoveLoading from '@/components/base/LoveLoading.vue'
 import type { MomentMood, Visibility } from '@/types/domain'
 import { getMoment, createMoment, updateMoment } from '@/services/moment'
 import { getTempFileUrls } from '@/services/media'
@@ -663,6 +665,7 @@ async function onSave() {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 12rpx;
   width: 100%;
   height: 96rpx;
   border-radius: 48rpx;
