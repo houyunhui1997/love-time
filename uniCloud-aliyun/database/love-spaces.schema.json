@@ -1,0 +1,19 @@
+{
+  "bsonType": "object",
+  "description": "用户专属空间",
+  "required": ["ownerUid", "name", "code", "theme", "memberCount", "status", "createdAt", "updatedAt", "revision"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false, "count": false },
+  "properties": {
+    "_id": { "description": "系统主键" },
+    "ownerUid": { "bsonType": "string" },
+    "name": { "bsonType": "string", "minLength": 1, "maxLength": 20 },
+    "code": { "bsonType": "string", "pattern": "^[23456789A-HJ-NP-Z]{4}$" },
+    "relationStartDate": { "bsonType": ["string", "null"] },
+    "theme": { "bsonType": "string", "enum": ["warm-paper", "clean"] },
+    "memberCount": { "bsonType": "int", "minimum": 1, "maximum": 2 },
+    "status": { "bsonType": "string", "enum": ["active", "closed"] },
+    "createdAt": { "bsonType": "long" },
+    "updatedAt": { "bsonType": "long" },
+    "revision": { "bsonType": "int", "minimum": 1 }
+  }
+}

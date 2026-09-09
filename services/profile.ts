@@ -10,13 +10,40 @@ export interface AccountProfile {
 
 export interface LoveProfile {
   _id: string
+  coupleId: string | null
+  spaceId: string
+  spaceName: string
+  spaceCode: string
+  ownedSpaceId: string
+  isOwnedSpace: boolean
+  isCouple: boolean
   selfName: string
   partnerName: string
   loveStartDate: string
-  selfGender: Gender
+  selfGender: Gender | null
   selfAvatarFileId: string | null
   partnerAvatarFileId: string | null
+  members: SpaceMember[]
+  spaces: SpaceSummary[]
   revision: number
+}
+
+export interface SpaceMember {
+  uid: string
+  role: 'owner' | 'member'
+  nickname: string
+  avatarFileId: string | null
+  gender: Gender | null
+  joinedAt: number
+}
+
+export interface SpaceSummary {
+  _id: string
+  name: string
+  code: string
+  memberCount: number
+  isOwned: boolean
+  isActive: boolean
 }
 
 interface ApiResponse<T> {
@@ -32,10 +59,9 @@ export interface SaveLoginProfileParams {
 }
 
 export interface SaveLoveProfileParams {
-  selfName: string
-  partnerName: string
+  spaceName: string
   loveStartDate: string
-  partnerAvatarFileId?: string | null
+  revision: number
 }
 
 interface ProfileCloudObject {

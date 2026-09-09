@@ -31,7 +31,15 @@
     "title": { "bsonType": "string", "minLength": 1, "maxLength": 30 },
     "titleCustomized": { "bsonType": "bool" },
     "content": { "bsonType": "string", "minLength": 1, "maxLength": 2000 },
-    "mood": { "bsonType": "string", "enum": ["happy", "warm", "calm", "moved", "other"] },
+    "mood": {
+      "bsonType": "string",
+      "enum": [
+        "happy", "sweet", "surprised", "expectant", "excited", "proud",
+        "warm", "secure", "moved", "missing", "shy", "heartbeat",
+        "calm", "relaxed", "healed", "content", "daily", "relieved",
+        "sad", "wronged", "tired", "angry", "lonely", "lost", "other"
+      ]
+    },
     "occurredAt": { "bsonType": "long" },
     "occurredMonth": { "bsonType": "string", "pattern": "^\\d{4}-\\d{2}$" },
     "mediaIds": {
@@ -47,4 +55,3 @@
     "revision": { "bsonType": "int", "minimum": 1 }
   }
 }
-

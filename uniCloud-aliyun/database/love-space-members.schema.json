@@ -1,0 +1,18 @@
+{
+  "bsonType": "object",
+  "description": "空间成员",
+  "required": ["spaceId", "uid", "role", "status", "joinedAt", "lastActiveAt", "createdAt", "updatedAt"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false, "count": false },
+  "properties": {
+    "_id": { "description": "系统主键" },
+    "spaceId": { "bsonType": "string" },
+    "uid": { "bsonType": "string" },
+    "role": { "bsonType": "string", "enum": ["owner", "member"] },
+    "status": { "bsonType": "string", "enum": ["active", "left"] },
+    "joinedAt": { "bsonType": "long" },
+    "leftAt": { "bsonType": ["long", "null"] },
+    "lastActiveAt": { "bsonType": "long" },
+    "createdAt": { "bsonType": "long" },
+    "updatedAt": { "bsonType": "long" }
+  }
+}

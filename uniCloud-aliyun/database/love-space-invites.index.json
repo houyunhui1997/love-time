@@ -1,0 +1,4 @@
+[
+  { "IndexName": "token_unique", "MgoKeySchema": { "MgoIndexKeys": [{ "Name": "token", "Direction": "1" }], "MgoIsUnique": true } },
+  { "IndexName": "space_status", "MgoKeySchema": { "MgoIndexKeys": [{ "Name": "spaceId", "Direction": "1" }, { "Name": "status", "Direction": "1" }], "MgoIsUnique": false } }
+]

@@ -1,12 +1,26 @@
 'use strict'
 
 const uniIdCommon = require('uni-id-common')
-const { success, normalizeError, AppError, API_CODE, requireString } = require('love-common')
+const {
+  success,
+  normalizeError,
+  AppError,
+  API_CODE,
+  requireString,
+  getActiveSpace,
+  canAccessSpace,
+  getCreatorAccount
+} = require('love-common')
 const db = uniCloud.database()
 const dbCmd = db.command
 const moments = db.collection('moments')
 
-const MOODS = ['happy', 'warm', 'calm', 'moved', 'other']
+const MOODS = [
+  'happy', 'sweet', 'surprised', 'expectant', 'excited', 'proud',
+  'warm', 'secure', 'moved', 'missing', 'shy', 'heartbeat',
+  'calm', 'relaxed', 'healed', 'content', 'daily', 'relieved',
+  'sad', 'wronged', 'tired', 'angry', 'lonely', 'lost', 'other'
+]
 const PAGE_SIZE = 20
 
 async function requireAuth(context) {
@@ -15,9 +29,15 @@ async function requireAuth(context) {
   return auth
 }
 
-function toClient(item) {
+async function toClient(item, viewerUid) {
+  const creator = await getCreatorAccount(item.creatorUid)
   return {
     _id: item._id,
+    spaceId: item.spaceId,
+    creatorUid: item.creatorUid,
+    creatorName: creator.nickname,
+    creatorAvatarFileId: creator.avatarFileId,
+    isMine: item.creatorUid === viewerUid,
     title: item.title,
     titleCustomized: !!item.titleCustomized,
     content: item.content,
@@ -29,6 +49,15 @@ function toClient(item) {
     createdAt: item.createdAt,
     revision: item.revision || 1
   }
+}
+
+async function canRead(uid, item) {
+  if (item.creatorUid === uid) return true
+  return item.visibility === 'couple' && await canAccessSpace(uid, item.spaceId)
+}
+
+async function canWrite(uid, item) {
+  return item.creatorUid === uid || (item.visibility === 'couple' && await canAccessSpace(uid, item.spaceId))
 }
 
 function toOccurredMonth(occurredAt) {
@@ -47,12 +76,18 @@ module.exports = {
   async list(params = {}) {
     try {
       const auth = await requireAuth(this)
+      const active = await getActiveSpace(auth.uid)
       const month = typeof params.month === 'string' && /^\d{4}-\d{2}$/.test(params.month) ? params.month : null
       const cursor = typeof params.cursor === 'string' && params.cursor ? params.cursor : null
 
-      let where = { creatorUid: auth.uid, status: 'active' }
-      if (month) where.occurredMonth = month
-      if (cursor) where._id = dbCmd.gt(cursor)
+      const conditions = [
+        { spaceId: active.space._id },
+        { status: 'active' },
+        dbCmd.or([{ creatorUid: auth.uid }, { visibility: 'couple' }])
+      ]
+      if (month) conditions.push({ occurredMonth: month })
+      if (cursor) conditions.push({ _id: dbCmd.lt(cursor) })
+      const where = dbCmd.and(conditions)
 
       const result = await moments
         .where(where)
@@ -66,7 +101,7 @@ module.exports = {
       const list = hasMore ? items.slice(0, PAGE_SIZE) : items
 
       return success({
-        list: list.map(toClient),
+        list: await Promise.all(list.map(item => toClient(item, auth.uid))),
         nextCursor: hasMore ? list[list.length - 1]._id : null,
         hasMore
       })
@@ -84,9 +119,9 @@ module.exports = {
       const result = await moments.doc(id).get()
       const item = result.data && result.data[0]
       if (!item || item.status !== 'active') throw new AppError(API_CODE.NOT_FOUND, '时刻不存在')
-      if (item.creatorUid !== auth.uid) throw new AppError(API_CODE.FORBIDDEN, '无权访问该时刻')
+      if (!await canRead(auth.uid, item)) throw new AppError(API_CODE.FORBIDDEN, '无权访问该时刻')
 
-      return success(toClient(item))
+      return success(await toClient(item, auth.uid))
     } catch (error) {
       return normalizeError(error)
     }
@@ -96,6 +131,7 @@ module.exports = {
   async create(params = {}) {
     try {
       const auth = await requireAuth(this)
+      const active = await getActiveSpace(auth.uid)
       const content = requireString(params.content, '内容', { maxLength: 2000 })
 
       if (!MOODS.includes(params.mood)) throw new AppError(API_CODE.INVALID_PARAMS, '心情不正确')

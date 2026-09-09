@@ -1,194 +1,201 @@
 <template>
-  <view class="detail-page">
-    <!-- 顶部导航 -->
+  <view class="detail-page" :style="pageStyle">
     <view class="nav-bar">
       <view class="nav-back" @tap="goBack">
-        <view class="back-arrow" />
+        <uni-icons type="left" size="28" color="#514137" />
       </view>
       <text class="nav-title">时刻详情</text>
-      <view class="nav-more" @tap="onMoreTap">
-        <view class="dot" />
-        <view class="dot" />
-        <view class="dot" />
-      </view>
     </view>
 
-    <!-- 日期标题区 -->
-    <view v-if="moment" class="header-section">
-      <view class="date-block">
-        <text class="day-number">{{ dayNumber }}</text>
-        <view class="date-info">
-          <text class="month-year">{{ monthYear }}</text>
-          <view class="meta-row">
-            <text class="mood-tag" :class="moment.mood">{{ moodLabel }}</text>
-            <text class="meta-time">{{ moment.time }}</text>
+    <scroll-view class="detail-scroll" scroll-y :show-scrollbar="false" enhanced>
+      <view v-if="moment" class="detail-content">
+        <view class="moment-header">
+          <view class="date-marker">
+            <uni-icons type="smallcircle-filled" size="14" color="#e47a75" />
+            <view class="marker-line" />
+          </view>
+          <view class="header-copy">
+            <text class="occurred-at">{{ occurredAtLabel }}</text>
+            <view class="mood-summary">
+              <uni-icons :type="moodOption.icon" size="23" :color="moodColor" />
+              <text>{{ moodOption.label }}</text>
+            </view>
+          </view>
+          <image class="header-floral" src="/static/timeline/timeline-bottom-bouquet.png" mode="aspectFit" />
+        </view>
+
+        <view class="content-card glass-card">
+          <image class="paper-tape" src="/static/timeline/moment-paper-tape.png" mode="aspectFit" />
+          <text class="moment-content">{{ moment.content }}</text>
+        </view>
+
+        <view v-if="moment.images.length" class="photos-card glass-card">
+          <view class="photo-grid">
+            <view
+              v-for="(imageUrl, index) in visibleImages"
+              :key="imageUrl + '-' + index"
+              class="photo-cell"
+              @tap="previewImage(index)"
+            >
+              <image class="detail-image" :src="imageUrl" mode="aspectFill" />
+              <view v-if="index === 2 && hiddenImageCount > 0" class="photo-count">
+                <text>+{{ hiddenImageCount }}</text>
+              </view>
+            </view>
           </view>
         </view>
+
+        <view class="meta-card glass-card">
+          <view class="meta-item">
+            <view class="meta-label">
+              <uni-icons type="calendar" size="21" color="#9c8477" />
+              <text>发生时间</text>
+            </view>
+            <text class="meta-value">{{ occurredAtCompact }}</text>
+          </view>
+          <view class="meta-item">
+            <view class="meta-label">
+              <uni-icons :type="moodOption.icon" size="21" :color="moodColor" />
+              <text>这一刻的心情</text>
+            </view>
+            <text class="meta-value mood-value">{{ moodOption.label }}</text>
+          </view>
+          <view class="meta-item">
+            <view class="meta-label">
+              <uni-icons :type="visibilityIcon" size="21" color="#9c8477" />
+              <text>{{ visibilityLabel }}</text>
+            </view>
+          </view>
+        </view>
+
+        <button class="edit-button" @tap="goToEdit">编辑这段时光</button>
+        <text class="delete-action" @tap="onDelete">删除</text>
+        <view class="safe-space" />
       </view>
-      <view class="title-flower">
-        <text class="moment-title">{{ moment.title }}</text>
-        <image
-          class="flower-icon"
-          src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/flower-decoration.png"
-          mode="aspectFit"
-        />
-      </view>
-    </view>
+    </scroll-view>
 
-    <!-- 内容文字 -->
-    <view v-if="moment && moment.content" class="content-section">
-      <text class="content-text">{{ moment.content }}</text>
-    </view>
-
-    <!-- 图片网格 -->
-    <view v-if="moment && moment.images.length > 0" class="image-section">
-      <view class="image-grid">
-        <image
-          v-for="(img, index) in moment.images"
-          :key="index"
-          class="detail-image"
-          :src="img"
-          mode="aspectFill"
-          @tap="previewImage(index)"
-        />
-      </view>
-    </view>
-
-    <!-- 记录时间 -->
-    <view v-if="moment" class="record-time">
-      <text>记录于 {{ recordDate }}</text>
-    </view>
-
-    <!-- 底部装饰 -->
-    <view class="bottom-decoration">
-      <image
-        class="flower-decoration"
-        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/flower-decoration.png"
-        mode="aspectFit"
-      />
-    </view>
-
-    <!-- 底部按钮 -->
-    <view class="action-buttons">
-      <view class="edit-btn" @tap="goToEdit">
-        <view class="pencil-small" />
-        <text>编辑</text>
-      </view>
-      <text class="delete-text" @tap="onDelete">删除</text>
-    </view>
-
+    <image class="bottom-floral" src="/static/timeline/timeline-bottom-bouquet.png" mode="aspectFit" />
     <LoveLoading :visible="loading" fullscreen text="正在加载时光" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import LoveLoading from '@/components/base/LoveLoading.vue'
-import { getMoment, removeMoment, type MomentListItem } from '@/services/moment'
+import { getMomentMoodColor, getMomentMoodOption } from '@/constants/moment-moods'
+import type { MomentMood, Visibility } from '@/types/domain'
+import { getMoment, removeMoment } from '@/services/moment'
 import { getTempFileUrls } from '@/services/media'
 
 interface MomentDetail {
   _id: string
-  title: string
   content: string
-  mood: string
-  time: string
-  occurredAt: string
+  mood: MomentMood
+  visibility: Visibility
+  occurredAt: number
   images: string[]
-  createdAt: string
+}
+
+const systemInfo = uni.getSystemInfoSync()
+
+function getNavigationMetrics() {
+  const fallbackTop = Number(systemInfo.statusBarHeight || 20) + 6
+  try {
+    const menuButton = uni.getMenuButtonBoundingClientRect()
+    if (menuButton?.top && menuButton?.height) return { top: menuButton.top, height: menuButton.height }
+  } catch {
+    // 非微信环境使用接近微信胶囊尺寸的回退值。
+  }
+  return { top: fallbackTop, height: 32 }
+}
+
+const navigationMetrics = getNavigationMetrics()
+const pageStyle = {
+  '--menu-top': navigationMetrics.top + 'px',
+  '--menu-height': navigationMetrics.height + 'px'
 }
 
 const moment = ref<MomentDetail | null>(null)
+const recordId = ref('')
 const loading = ref(false)
+const loadedOnce = ref(false)
 
-const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+const moodOption = computed(() => getMomentMoodOption(moment.value?.mood || 'warm'))
+const moodColor = computed(() => getMomentMoodColor(moment.value?.mood || 'warm'))
+const visibleImages = computed(() => moment.value?.images.slice(0, 3) || [])
+const hiddenImageCount = computed(() => Math.max(0, (moment.value?.images.length || 0) - 3))
+const visibilityLabel = computed(() => moment.value?.visibility === 'couple' ? '双方可见' : '仅自己可见')
+const visibilityIcon = computed(() => moment.value?.visibility === 'couple' ? 'eye' : 'locked')
 
-const dayNumber = computed(() => {
+function pad(value: number) {
+  return String(value).padStart(2, '0')
+}
+
+function formatTime(date: Date) {
+  return pad(date.getHours()) + ':' + pad(date.getMinutes())
+}
+
+const occurredAtLabel = computed(() => {
   if (!moment.value) return ''
-  return moment.value.occurredAt.split('-')[2] || ''
+  const date = new Date(moment.value.occurredAt)
+  return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日 ' + formatTime(date)
 })
 
-const monthYear = computed(() => {
+const occurredAtCompact = computed(() => {
   if (!moment.value) return ''
-  const [year, month] = moment.value.occurredAt.split('-')
-  return `${monthNames[parseInt(month) - 1]} ${year}`
+  const date = new Date(moment.value.occurredAt)
+  return date.getFullYear() + '.' + pad(date.getMonth() + 1) + '.' + pad(date.getDate()) + ' ' + formatTime(date)
 })
 
-const moodLabel = computed(() => {
-  if (!moment.value) return ''
-  const map: Record<string, string> = {
-    happy: '开心',
-    warm: '温暖',
-    calm: '平静',
-    moved: '感动',
-    other: '其他'
-  }
-  return map[moment.value.mood] || moment.value.mood
-})
-
-const recordDate = computed(() => {
-  if (!moment.value) return ''
-  return moment.value.createdAt.replace(/-/g, '.')
-})
-
-onLoad(async (options) => {
-  if (!options?.id) {
-    uni.showToast({ title: '参数错误', icon: 'none' })
-    return
-  }
+async function loadMoment() {
+  if (!recordId.value || loading.value) return
   loading.value = true
   try {
-    const data = await getMoment(options.id)
-    const date = new Date(data.occurredAt)
-    const occurredAtStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    const createdAtStr = new Date(data.createdAt)
-    const createdAtFormatted = `${createdAtStr.getFullYear()}-${String(createdAtStr.getMonth() + 1).padStart(2, '0')}-${String(createdAtStr.getDate()).padStart(2, '0')}`
-
-    // 换取图片临时链接
-    const urlMap = data.mediaIds.length > 0 ? await getTempFileUrls(data.mediaIds) : {}
-    const images = data.mediaIds.map(id => urlMap[id] || id).filter(Boolean)
-
+    const data = await getMoment(recordId.value)
+    const urlMap = data.mediaIds.length ? await getTempFileUrls(data.mediaIds) : {}
     moment.value = {
       _id: data._id,
-      title: data.title,
       content: data.content,
       mood: data.mood,
-      time: `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`,
-      occurredAt: occurredAtStr,
-      images,
-      createdAt: createdAtFormatted
+      visibility: data.visibility,
+      occurredAt: data.occurredAt,
+      images: data.mediaIds.map(fileId => urlMap[fileId] || fileId).filter(Boolean)
     }
+    loadedOnce.value = true
   } catch (error) {
     const message = error instanceof Error ? error.message : '时刻加载失败'
     uni.showToast({ title: message, icon: 'none' })
   } finally {
     loading.value = false
   }
+}
+
+onLoad((options) => {
+  if (!options?.id) {
+    uni.showToast({ title: '参数错误', icon: 'none' })
+    return
+  }
+  recordId.value = options.id
+  loadMoment()
+})
+
+onShow(() => {
+  if (loadedOnce.value) loadMoment()
 })
 
 function previewImage(current: number) {
   if (!moment.value) return
-  uni.previewImage({
-    current,
-    urls: moment.value.images
-  })
+  uni.previewImage({ current, urls: moment.value.images })
 }
 
 function goBack() {
   uni.navigateBack()
 }
 
-function onMoreTap() {
-  uni.showActionSheet({
-    itemList: ['分享'],
-    success: () => {}
-  })
-}
-
 function goToEdit() {
   if (!moment.value) return
-  uni.navigateTo({ url: `/pages/timeline/edit?id=${moment.value._id}` })
+  uni.navigateTo({ url: '/pages/timeline/edit?id=' + moment.value._id })
 }
 
 function onDelete() {
@@ -196,13 +203,13 @@ function onDelete() {
   uni.showModal({
     title: '确认删除',
     content: '删除后无法恢复，是否继续？',
-    confirmColor: '#db7470',
-    success: async (res) => {
-      if (!res.confirm) return
+    confirmColor: '#df716e',
+    success: async (result) => {
+      if (!result.confirm || !moment.value) return
       try {
-        await removeMoment(moment.value!._id)
+        await removeMoment(moment.value._id)
         uni.showToast({ title: '已删除', icon: 'success' })
-        setTimeout(() => uni.navigateBack(), 1200)
+        setTimeout(() => uni.navigateBack(), 900)
       } catch (error) {
         const message = error instanceof Error ? error.message : '删除失败'
         uni.showToast({ title: message, icon: 'none' })
@@ -214,276 +221,274 @@ function onDelete() {
 
 <style scoped lang="scss">
 .detail-page {
-  position: relative;
-  min-height: 100vh;
-  padding: calc(var(--love-safe-top) + 24rpx) var(--love-page-gutter)
-    calc(var(--love-safe-bottom) + 48rpx);
-  background: var(--love-color-bg);
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  background:
+    radial-gradient(circle at 7% 1%, rgba(247, 205, 197, 0.68), transparent 42%),
+    linear-gradient(180deg, #f8e3dd 0%, #faeee8 36%, #fcf7f1 100%);
+  color: #58463c;
 }
 
-/* 顶部导航 */
+.detail-page::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(18deg, rgba(133, 98, 75, 0.012) 0 1rpx, transparent 1rpx 7rpx),
+    repeating-linear-gradient(102deg, rgba(255, 255, 255, 0.07) 0 1rpx, transparent 1rpx 9rpx);
+  content: '';
+  pointer-events: none;
+}
+
 .nav-bar {
+  position: relative;
+  z-index: 3;
   display: flex;
+  height: calc(var(--menu-top) + var(--menu-height));
+  flex: 0 0 auto;
   align-items: center;
-  justify-content: space-between;
-  height: 88rpx;
-  margin-bottom: 32rpx;
+  justify-content: center;
+  padding-top: var(--menu-top);
 }
 
 .nav-back {
+  position: absolute;
+  bottom: 0;
+  left: 35rpx;
   display: flex;
+  width: 62rpx;
+  height: var(--menu-height);
   align-items: center;
-  justify-content: center;
-  width: 72rpx;
-  height: 72rpx;
-
-  .back-arrow {
-    width: 20rpx;
-    height: 20rpx;
-    border-left: 4rpx solid var(--love-color-text);
-    border-bottom: 4rpx solid var(--love-color-text);
-    transform: rotate(45deg);
-  }
+  justify-content: flex-start;
 }
 
 .nav-title {
-  font-size: 34rpx;
+  color: #514137;
+  font-size: 35rpx;
   font-weight: 600;
-  color: var(--love-color-text);
+  line-height: var(--menu-height);
+  letter-spacing: 1rpx;
 }
 
-.nav-more {
+.detail-scroll {
+  position: relative;
+  z-index: 2;
+  min-height: 0;
+  flex: 1;
+}
+
+.detail-content {
+  position: relative;
+  z-index: 2;
+  padding: 30rpx 34rpx 0;
+}
+
+.moment-header {
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5rpx;
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
-
-  .dot {
-    width: 5rpx;
-    height: 5rpx;
-    border-radius: 50%;
-    background: var(--love-color-text-secondary);
-  }
-}
-
-/* 日期标题区 */
-.header-section {
-  margin-bottom: 32rpx;
-}
-
-.date-block {
-  display: flex;
+  min-height: 178rpx;
   align-items: flex-start;
-  gap: 24rpx;
-  margin-bottom: 16rpx;
+  padding: 36rpx 0 16rpx 10rpx;
+  overflow: hidden;
 }
 
-.day-number {
-  font-size: 96rpx;
-  font-weight: 300;
-  line-height: 1;
-  color: var(--love-color-primary);
-  font-family: Georgia, 'Times New Roman', serif;
+.date-marker {
+  display: flex;
+  width: 30rpx;
+  align-items: center;
+  flex-direction: column;
+  padding-top: 8rpx;
 }
 
-.date-info {
+.marker-line {
+  width: 1rpx;
+  height: 73rpx;
+  margin-top: 4rpx;
+  background: rgba(224, 113, 109, 0.72);
+}
+
+.header-copy {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 12rpx;
-  padding-top: 12rpx;
 }
 
-.month-year {
-  font-size: 26rpx;
-  color: var(--love-color-text-secondary);
+.occurred-at {
+  color: #5a3d32;
+  font-family: Georgia, 'Songti SC', STSong, serif;
+  font-size: 38rpx;
+  line-height: 1.35;
 }
 
-.meta-row {
+.mood-summary {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-}
-
-.mood-tag {
-  padding: 4rpx 16rpx;
-  border-radius: 12rpx;
-  font-size: 24rpx;
-
-  &.happy {
-    color: #e8a87c;
-    background: rgba(232, 168, 124, 0.12);
-  }
-
-  &.warm {
-    color: var(--love-color-primary);
-    background: rgba(219, 116, 112, 0.12);
-  }
-
-  &.calm {
-    color: #8fb9a8;
-    background: rgba(143, 185, 168, 0.12);
-  }
-
-  &.moved {
-    color: #c38d9e;
-    background: rgba(195, 141, 158, 0.12);
-  }
-
-  &.other {
-    color: var(--love-color-text-secondary);
-    background: rgba(148, 135, 125, 0.12);
-  }
-}
-
-.meta-time {
-  font-size: 26rpx;
-  color: var(--love-color-text-secondary);
-}
-
-.title-flower {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.moment-title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: var(--love-color-text);
-  line-height: 1.4;
-}
-
-.flower-icon {
-  width: 48rpx;
-  height: 48rpx;
-  opacity: 0.7;
-}
-
-/* 内容文字 */
-.content-section {
-  margin-bottom: 32rpx;
-}
-
-.content-text {
+  gap: 14rpx;
+  margin-top: 21rpx;
+  color: #7f6659;
   font-size: 28rpx;
-  color: var(--love-color-text);
-  line-height: 1.8;
 }
 
-/* 图片区域 */
-.image-section {
-  margin-bottom: 32rpx;
+.header-floral {
+  position: absolute;
+  top: -34rpx;
+  right: -36rpx;
+  width: 235rpx;
+  height: 210rpx;
+  opacity: 0.5;
+  transform: rotate(-13deg) scaleX(-1);
+  transform-origin: center;
 }
 
-.image-grid {
+.glass-card {
+  border: 1rpx solid rgba(255, 255, 255, 0.95);
+  background: rgba(252, 247, 241, 0.86);
+  box-shadow: inset 0 2rpx 0 rgba(255, 255, 255, 0.9), 0 13rpx 31rpx rgba(105, 72, 54, 0.075);
+  backdrop-filter: blur(16rpx);
+  -webkit-backdrop-filter: blur(16rpx);
+}
+
+.content-card {
+  position: relative;
+  min-height: 280rpx;
+  padding: 77rpx 46rpx 48rpx;
+  border-radius: 29rpx;
+}
+
+.paper-tape {
+  position: absolute;
+  top: -28rpx;
+  left: 20rpx;
+  width: 135rpx;
+  height: 62rpx;
+  opacity: 0.72;
+  transform: rotate(-5deg);
+}
+
+.moment-content {
+  display: block;
+  color: #5d4035;
+  font-family: 'Songti SC', STSong, serif;
+  font-size: 31rpx;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.photos-card {
+  margin-top: 27rpx;
+  padding: 20rpx;
+  border-radius: 29rpx;
+}
+
+.photo-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16rpx;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 11rpx;
+}
+
+.photo-cell {
+  position: relative;
+  height: 235rpx;
+  overflow: hidden;
+  border-radius: 22rpx;
 }
 
 .detail-image {
   width: 100%;
-  height: 320rpx;
-  border-radius: var(--love-radius-medium);
-  object-fit: cover;
-}
-
-/* 记录时间 */
-.record-time {
-  text-align: center;
-  margin-bottom: 48rpx;
-
-  text {
-    font-size: 24rpx;
-    color: var(--love-color-text-secondary);
-  }
-}
-
-/* 底部装饰 */
-.bottom-decoration {
-  position: absolute;
-  bottom: 140rpx;
-  right: -40rpx;
-  width: 280rpx;
-  height: 200rpx;
-  pointer-events: none;
-  opacity: 0.2;
-}
-
-.flower-decoration {
-  width: 100%;
   height: 100%;
 }
 
-/* 底部按钮 */
-.action-buttons {
+.photo-count {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 48rpx;
-  padding-top: 24rpx;
+  background: rgba(60, 44, 36, 0.38);
+  color: #fff;
+  font-size: 35rpx;
 }
 
-.edit-btn {
+.meta-card {
+  margin-top: 27rpx;
+  padding: 0 29rpx;
+  border-radius: 29rpx;
+}
+
+.meta-item {
+  display: flex;
+  min-height: 93rpx;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.meta-item + .meta-item {
+  border-top: 1rpx solid rgba(218, 197, 184, 0.48);
+}
+
+.meta-label {
   display: flex;
   align-items: center;
+  gap: 19rpx;
+  color: #8b7467;
+  font-size: 26rpx;
+}
+
+.meta-value {
+  color: #5e463a;
+  font-size: 25rpx;
+}
+
+.mood-value {
+  color: #cf6b68;
+}
+
+.edit-button {
+  display: flex;
+  width: 616rpx;
+  height: 91rpx;
+  align-items: center;
   justify-content: center;
-  gap: 12rpx;
-  width: 240rpx;
-  height: 80rpx;
-  border-radius: 40rpx;
-  border: 2rpx solid var(--love-color-primary);
-  color: var(--love-color-primary);
-  font-size: 28rpx;
-
-  &:active {
-    background: rgba(219, 116, 112, 0.08);
-  }
+  margin: 37rpx auto 0;
+  padding: 0;
+  border-radius: 48rpx;
+  background: linear-gradient(135deg, #eb817a 0%, #db676a 100%);
+  box-shadow: 0 13rpx 29rpx rgba(205, 94, 90, 0.22);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 500;
+  line-height: 91rpx;
 }
 
-.pencil-small {
-  width: 24rpx;
-  height: 24rpx;
-  position: relative;
-
-  &::before {
-    content: '';
-    position: absolute;
-    width: 3rpx;
-    height: 18rpx;
-    background: var(--love-color-primary);
-    left: 50%;
-    top: 0;
-    transform: translateX(-50%);
-    border-radius: 2rpx;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 0;
-    border-left: 6rpx solid transparent;
-    border-right: 6rpx solid transparent;
-    border-top: 8rpx solid var(--love-color-primary);
-    left: 50%;
-    bottom: 0;
-    transform: translateX(-50%);
-  }
+.edit-button::after {
+  border: 0;
 }
 
-.delete-text {
-  font-size: 28rpx;
-  color: var(--love-color-text-secondary);
-  padding: 16rpx 32rpx;
+.delete-action {
+  display: block;
+  margin-top: 27rpx;
+  color: #d96866;
+  font-size: 27rpx;
+  text-align: center;
+}
 
-  &:active {
-    color: var(--love-color-danger);
-  }
+.bottom-floral {
+  position: absolute;
+  bottom: -72rpx;
+  left: -56rpx;
+  z-index: 1;
+  width: 285rpx;
+  height: 245rpx;
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.safe-space {
+  height: calc(env(safe-area-inset-bottom) + 72rpx);
 }
 </style>

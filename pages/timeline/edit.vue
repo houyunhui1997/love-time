@@ -1,134 +1,159 @@
 <template>
-  <view class="edit-page">
-    <!-- 顶部导航 -->
+  <view class="edit-page" :style="pageStyle">
     <view class="nav-bar">
       <view class="nav-back" @tap="goBack">
-        <view class="back-arrow" />
+        <uni-icons type="left" size="28" color="#514137" />
       </view>
       <text class="nav-title">记录此刻</text>
-      <text class="nav-save" :class="{ disabled: !canSave }" @tap="onSave">保存</text>
     </view>
 
-    <!-- 内容输入区 -->
-    <view class="content-area">
-      <textarea
-        v-model="form.content"
-        class="content-textarea"
-        placeholder="写下这一刻的故事..."
-        placeholder-class="textarea-placeholder"
-        maxlength="500"
-        :auto-height="true"
-      />
-      <view class="flower-deco">
-        <image
-          class="flower-small"
-          src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/flower-decoration.png"
-          mode="aspectFit"
-        />
-      </view>
-    </view>
+    <scroll-view class="edit-scroll" scroll-y :show-scrollbar="false" enhanced>
+      <view class="edit-content">
+        <view class="story-card">
+          <textarea
+            v-model="form.content"
+            class="story-textarea"
+            placeholder="写下这一刻的故事…"
+            placeholder-class="story-placeholder"
+            maxlength="500"
+          />
+          <text class="character-count">{{ form.content.length }}/500</text>
+        </view>
 
-    <!-- 添加照片 -->
-    <view class="photo-section">
-      <view class="section-header">
-        <text class="section-title">添加照片</text>
-        <text class="section-limit">最多9张</text>
-      </view>
-      <view class="photo-grid">
-        <view
-          v-for="(img, index) in form.images"
-          :key="index"
-          class="photo-item"
-        >
-          <image class="photo-image" :src="img" mode="aspectFill" />
-          <view class="photo-remove" @tap="removeImage(index)">
-            <view class="remove-icon" />
+        <view class="photo-card">
+          <view class="section-heading">
+            <text class="section-title">添加照片</text>
+            <text class="section-tip">最多9张</text>
+          </view>
+          <view class="photo-grid">
+            <view v-for="(imageUrl, index) in form.images" :key="`${imageUrl}-${index}`" class="photo-item">
+              <image class="photo-image" :src="imageUrl" mode="aspectFill" />
+              <view class="photo-remove" @tap.stop="removeImage(index)">
+                <uni-icons type="closeempty" size="15" color="#ffffff" />
+              </view>
+            </view>
+            <view v-if="form.images.length < 9" class="photo-add" @tap="chooseImage">
+              <uni-icons type="camera-filled" size="32" color="#dd7772" />
+              <text>添加照片</text>
+            </view>
           </view>
         </view>
-        <view v-if="form.images.length < 9" class="photo-add" @tap="chooseImage">
-          <text class="add-plus">+</text>
-          <text class="add-label">添加</text>
+
+        <view class="settings-card">
+          <view class="setting-row time-row" @tap="openDateTimePicker">
+            <view class="setting-label">
+              <uni-icons class="setting-icon" type="calendar" size="20" color="#df7772" />
+              <text>发生时间</text>
+            </view>
+            <view class="setting-value">
+              <text>{{ displayDateTime }}</text>
+              <uni-icons type="right" size="19" color="#a9998e" />
+            </view>
+          </view>
+
+          <view class="mood-row">
+            <view class="setting-label mood-heading">
+              <uni-icons class="setting-icon" type="heart" size="20" color="#df7772" />
+              <text>这一刻的心情</text>
+            </view>
+            <view class="quick-moods">
+              <view
+                v-for="mood in quickMoods"
+                :key="mood.value"
+                class="quick-mood"
+                :class="{ active: form.mood === mood.value }"
+                @tap="form.mood = mood.value"
+              >
+                <uni-icons
+                  v-if="form.mood === mood.value"
+                  :type="mood.icon"
+                  size="15"
+                  color="#ffffff"
+                />
+                <text>{{ mood.label }}</text>
+              </view>
+              <view class="quick-mood" :class="{ active: isExtendedMood }" @tap="showMoodPicker = true">
+                <uni-icons v-if="isExtendedMood" type="heart-filled" size="15" color="#ffffff" />
+                <text>更多</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="setting-row visibility-row">
+            <view class="setting-label visibility-label">
+              <uni-icons class="setting-icon" type="locked" size="20" color="#df7772" />
+              <view class="visibility-copy">
+                <text class="visibility-title">仅自己可见</text>
+                <text class="visibility-tip">关闭后，另一半也能看到</text>
+              </view>
+            </view>
+            <switch
+              class="visibility-switch"
+              :checked="form.visibility === 'private'"
+              color="#df716e"
+              @change="onVisibilityChange"
+            />
+          </view>
         </view>
-      </view>
-    </view>
 
-    <!-- 发生时间 -->
-    <view class="form-row" @tap="showDateTimePicker = true">
-      <text class="form-label">发生时间</text>
-      <view class="form-value-row">
-        <text class="form-value">{{ displayDateTime }}</text>
-        <view class="arrow-right" />
-      </view>
-    </view>
-
-    <!-- 心情选择 -->
-    <view class="mood-section">
-      <text class="section-title">这一刻的心情</text>
-      <view class="mood-options">
-        <view
-          v-for="mood in moodOptions"
-          :key="mood.value"
-          class="mood-tag"
-          :class="[{ active: form.mood === mood.value }, mood.value]"
-          @tap="form.mood = mood.value"
+        <button
+          class="save-button"
+          :class="{ 'is-disabled': saving || !canSave }"
+          :disabled="saving"
+          @tap="onSave"
         >
-          {{ mood.label }}
-        </view>
+          <LoveLoading v-if="saving" size="mini" text="" :mask="false" />
+          <text>{{ saving ? '保存中…' : '保存这段时光' }}</text>
+        </button>
+
+        <view class="bottom-space" />
       </view>
-    </view>
+    </scroll-view>
 
-    <!-- 仅自己可见 -->
-    <view class="visibility-row">
-      <view class="visibility-info">
-        <text class="form-label">仅自己可见</text>
-        <text class="visibility-tip">关闭后，另一半也能看到</text>
-      </view>
-      <switch
-        :checked="form.visibility === 'private'"
-        color="#db7470"
-        class="form-switch"
-        @change="onVisibilityChange"
-      />
-    </view>
+    <image
+      class="bottom-bouquet"
+      src="/static/timeline/timeline-bottom-bouquet.png"
+      mode="aspectFit"
+    />
 
-    <!-- 保存按钮 -->
-    <view class="action-area">
-      <button class="save-button" :disabled="saving" @tap="onSave">
-        <LoveLoading v-if="saving" size="mini" text="" :mask="false" />
-        <text>{{ saving ? '保存中...' : '保存这段时光' }}</text>
-      </button>
-    </view>
-
-    <!-- 日期时间选择器 -->
-    <view v-if="showDateTimePicker" class="picker-mask" @tap="showDateTimePicker = false">
-      <view class="picker-sheet" @tap.stop>
+    <view v-if="showDateTimePicker" class="picker-mask" @tap="cancelDateTimePicker">
+      <view class="picker-sheet date-picker-sheet" @tap.stop>
         <view class="picker-handle" />
-        <view class="picker-title">选择时间</view>
+        <text class="picker-title">选择发生时间</text>
         <picker-view
           class="datetime-picker"
           indicator-style="height: 88rpx;"
-          :value="dateTimeValue"
+          :value="dateTimeSelection"
           @change="onDateTimeChange"
         >
           <picker-view-column>
-            <view v-for="y in dateYears" :key="y" class="picker-item">{{ y }}年</view>
+            <view v-for="year in dateYears" :key="year" class="picker-item">{{ year }}年</view>
           </picker-view-column>
           <picker-view-column>
-            <view v-for="m in 12" :key="m" class="picker-item">{{ m }}月</view>
+            <view v-for="month in 12" :key="month" class="picker-item">{{ month }}月</view>
           </picker-view-column>
           <picker-view-column>
-            <view v-for="d in dateDays" :key="d" class="picker-item">{{ d }}日</view>
+            <view v-for="day in dateDays" :key="day" class="picker-item">{{ day }}日</view>
           </picker-view-column>
           <picker-view-column>
-            <view v-for="h in 24" :key="h" class="picker-item">{{ h - 1 }}时</view>
+            <view v-for="hour in 24" :key="hour" class="picker-item">{{ hour - 1 }}时</view>
           </picker-view-column>
           <picker-view-column>
-            <view v-for="min in 60" :key="min" class="picker-item">{{ min - 1 }}分</view>
+            <view v-for="minute in 60" :key="minute" class="picker-item">{{ minute - 1 }}分</view>
           </picker-view-column>
         </picker-view>
-        <view class="picker-confirm" @tap="confirmDateTime">确定</view>
+        <view class="picker-actions">
+          <button class="picker-action picker-cancel" @tap="cancelDateTimePicker">取消</button>
+          <button class="picker-action picker-confirm" @tap="confirmDateTime">确定</button>
+        </view>
       </view>
     </view>
+
+    <MomentMoodPicker
+      v-model:visible="showMoodPicker"
+      :model-value="form.mood"
+      @confirm="selectExtendedMood"
+    />
   </view>
 </template>
 
@@ -136,8 +161,10 @@
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import LoveLoading from '@/components/base/LoveLoading.vue'
+import MomentMoodPicker from '@/components/timeline/MomentMoodPicker.vue'
+import { MOMENT_MOOD_GROUPS } from '@/constants/moment-moods'
 import type { MomentMood, Visibility } from '@/types/domain'
-import { getMoment, createMoment, updateMoment } from '@/services/moment'
+import { createMoment, getMoment, updateMoment } from '@/services/moment'
 import { getTempFileUrls } from '@/services/media'
 
 interface FormData {
@@ -150,11 +177,32 @@ interface FormData {
   visibility: Visibility
 }
 
+const systemInfo = uni.getSystemInfoSync()
+
+function getNavigationMetrics() {
+  const fallbackTop = Number(systemInfo.statusBarHeight || 20) + 6
+  try {
+    const menuButton = uni.getMenuButtonBoundingClientRect()
+    if (menuButton?.top && menuButton?.height) return { top: menuButton.top, height: menuButton.height }
+  } catch {
+    // 非微信环境使用接近微信胶囊尺寸的回退值。
+  }
+  return { top: fallbackTop, height: 32 }
+}
+
+const navigationMetrics = getNavigationMetrics()
+const pageStyle = {
+  '--menu-top': `${navigationMetrics.top}px`,
+  '--menu-height': `${navigationMetrics.height}px`
+}
+
 const isEdit = ref(false)
 const editId = ref('')
 const editRevision = ref(1)
 const saving = ref(false)
 const showDateTimePicker = ref(false)
+const showMoodPicker = ref(false)
+const dateTimeSelection = ref<number[]>([10, 0, 0, 0, 0])
 
 const form = reactive<FormData>({
   title: '',
@@ -166,88 +214,80 @@ const form = reactive<FormData>({
   visibility: 'private'
 })
 
-// 记录每张图的状态：fileId 表示已在云端（编辑加载），local 表示本地新选待上传
 const imageSource = ref<Array<{ type: 'file' | 'local'; value: string }>>([])
-
-const moodOptions = [
-  { label: '开心', value: 'happy' as MomentMood },
-  { label: '温暖', value: 'warm' as MomentMood },
-  { label: '平静', value: 'calm' as MomentMood },
-  { label: '感动', value: 'moved' as MomentMood },
-  { label: '其他', value: 'other' as MomentMood }
-]
+const quickMoodValues: MomentMood[] = ['happy', 'warm', 'calm', 'moved']
+const allMoodOptions = MOMENT_MOOD_GROUPS.flatMap(group => group.options)
+const quickMoods = quickMoodValues.map(value => allMoodOptions.find(option => option.value === value)!)
 
 const canSave = computed(() => form.content.trim().length > 0)
+const isExtendedMood = computed(() => !quickMoodValues.includes(form.mood))
 
 const displayDateTime = computed(() => {
-  if (!form.occurredAt) {
-    const now = new Date()
-    const date = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`
-    const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-    return `${date} ${time}`
-  }
-  const date = form.occurredAt.replace(/-/g, '.')
-  const time = form.occurredTime || '00:00'
-  return `${date} ${time}`
+  if (!form.occurredAt) return ''
+  return `${form.occurredAt.replace(/-/g, '.')} ${form.occurredTime || '00:00'}`
 })
 
-// 日期时间选择器
 const currentYear = new Date().getFullYear()
-const dateYears = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i)
-
+const dateYears = Array.from({ length: 21 }, (_, index) => currentYear - 10 + index)
 const dateDays = computed(() => {
-  const [year, month] = (form.occurredAt || `${currentYear}-01-01`).split('-').map(Number)
-  const daysInMonth = new Date(year || currentYear, month || 1, 0).getDate()
-  return Array.from({ length: daysInMonth }, (_, i) => i + 1)
+  const [yearIndex, monthIndex] = dateTimeSelection.value
+  const year = dateYears[yearIndex] || currentYear
+  const count = new Date(year, monthIndex + 1, 0).getDate()
+  return Array.from({ length: count }, (_, index) => index + 1)
 })
 
-const dateTimeValue = computed(() => {
-  const now = new Date()
-  const year = form.occurredAt ? parseInt(form.occurredAt.split('-')[0]) : now.getFullYear()
-  const month = form.occurredAt ? parseInt(form.occurredAt.split('-')[1]) : now.getMonth() + 1
-  const day = form.occurredAt ? parseInt(form.occurredAt.split('-')[2]) : now.getDate()
-  const hour = form.occurredTime ? parseInt(form.occurredTime.split(':')[0]) : now.getHours()
-  const minute = form.occurredTime ? parseInt(form.occurredTime.split(':')[1]) : now.getMinutes()
+function getCurrentDateTimeSelection() {
+  const current = new Date()
+  const year = form.occurredAt ? Number(form.occurredAt.split('-')[0]) : current.getFullYear()
+  const month = form.occurredAt ? Number(form.occurredAt.split('-')[1]) : current.getMonth() + 1
+  const day = form.occurredAt ? Number(form.occurredAt.split('-')[2]) : current.getDate()
+  const hour = form.occurredTime ? Number(form.occurredTime.split(':')[0]) : current.getHours()
+  const minute = form.occurredTime ? Number(form.occurredTime.split(':')[1]) : current.getMinutes()
   return [dateYears.indexOf(year), month - 1, day - 1, hour, minute]
-})
-
-let pendingDateTime: { date: string; time: string } | null = null
-
-function onDateTimeChange(e: any) {
-  const [yIndex, mIndex, dIndex, hIndex, minIndex] = e.detail.value
-  const year = dateYears[yIndex]
-  const month = String(mIndex + 1).padStart(2, '0')
-  const day = String(dIndex + 1).padStart(2, '0')
-  const hour = String(hIndex).padStart(2, '0')
-  const minute = String(minIndex).padStart(2, '0')
-  pendingDateTime = { date: `${year}-${month}-${day}`, time: `${hour}:${minute}` }
 }
 
-function confirmDateTime() {
-  if (pendingDateTime) {
-    form.occurredAt = pendingDateTime.date
-    form.occurredTime = pendingDateTime.time
-  }
+function openDateTimePicker() {
+  dateTimeSelection.value = getCurrentDateTimeSelection()
+  showDateTimePicker.value = true
+}
+
+function onDateTimeChange(event: { detail: { value: number[] } }) {
+  const [yearIndex, monthIndex, dayIndex, hourIndex, minuteIndex] = event.detail.value
+  const year = dateYears[yearIndex] || currentYear
+  const maxDayIndex = new Date(year, monthIndex + 1, 0).getDate() - 1
+  dateTimeSelection.value = [yearIndex, monthIndex, Math.min(dayIndex, maxDayIndex), hourIndex, minuteIndex]
+}
+
+function cancelDateTimePicker() {
   showDateTimePicker.value = false
 }
 
-function onVisibilityChange(e: any) {
-  form.visibility = e.detail.value ? 'private' : 'couple'
+function confirmDateTime() {
+  const [yearIndex, monthIndex, dayIndex, hourIndex, minuteIndex] = dateTimeSelection.value
+  const year = dateYears[yearIndex] || currentYear
+  form.occurredAt = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(dayIndex + 1).padStart(2, '0')}`
+  form.occurredTime = `${String(hourIndex).padStart(2, '0')}:${String(minuteIndex).padStart(2, '0')}`
+  showDateTimePicker.value = false
+}
+
+function selectExtendedMood(mood: MomentMood) {
+  form.mood = mood
+}
+
+function onVisibilityChange(event: any) {
+  form.visibility = event.detail.value ? 'private' : 'couple'
 }
 
 function chooseImage() {
   const remain = 9 - form.images.length
-  if (remain <= 0) {
-    uni.showToast({ title: '最多9张照片', icon: 'none' })
-    return
-  }
+  if (remain <= 0) return
   uni.chooseImage({
     count: remain,
     sizeType: ['compressed'],
     sourceType: ['album', 'camera'],
-    success: (res: any) => {
-      const paths: string[] = Array.isArray(res.tempFilePaths) ? res.tempFilePaths : [res.tempFilePaths]
-      paths.forEach((path: string) => {
+    success: (result: any) => {
+      const paths: string[] = Array.isArray(result.tempFilePaths) ? result.tempFilePaths : [result.tempFilePaths]
+      paths.forEach((path) => {
         form.images.push(path)
         imageSource.value.push({ type: 'local', value: path })
       })
@@ -260,80 +300,71 @@ function removeImage(index: number) {
   imageSource.value.splice(index, 1)
 }
 
-async function uploadImage(localPath: string): Promise<string> {
-  const ext = localPath.split('.').pop()?.toLowerCase() || 'jpg'
+async function uploadImage(localPath: string) {
+  const extension = localPath.split('.').pop()?.toLowerCase() || 'jpg'
   const result = await uniCloud.uploadFile({
     filePath: localPath,
-    cloudPath: `moment/${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`
+    cloudPath: `moment/${Date.now()}-${Math.floor(Math.random() * 10000)}.${extension}`
   })
   return result.fileID
 }
 
 onLoad(async (options) => {
-  const now = new Date()
-  form.occurredAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-  form.occurredTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  const current = new Date()
+  form.occurredAt = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`
+  form.occurredTime = `${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`
 
-  if (options?.id) {
-    isEdit.value = true
-    editId.value = options.id
-    try {
-      const data = await getMoment(options.id)
-      editRevision.value = data.revision || 1
-      form.content = data.content
-      form.mood = data.mood
-      form.visibility = data.visibility
-      form.title = data.titleCustomized ? data.title : ''
+  if (!options?.id) return
+  isEdit.value = true
+  editId.value = options.id
+  try {
+    const data = await getMoment(options.id)
+    editRevision.value = data.revision || 1
+    form.content = data.content
+    form.mood = data.mood
+    form.visibility = data.visibility
+    form.title = data.titleCustomized ? data.title : ''
 
-      const occurred = new Date(data.occurredAt)
-      form.occurredAt = `${occurred.getFullYear()}-${String(occurred.getMonth() + 1).padStart(2, '0')}-${String(occurred.getDate()).padStart(2, '0')}`
-      form.occurredTime = `${String(occurred.getHours()).padStart(2, '0')}:${String(occurred.getMinutes()).padStart(2, '0')}`
+    const occurred = new Date(data.occurredAt)
+    form.occurredAt = `${occurred.getFullYear()}-${String(occurred.getMonth() + 1).padStart(2, '0')}-${String(occurred.getDate()).padStart(2, '0')}`
+    form.occurredTime = `${String(occurred.getHours()).padStart(2, '0')}:${String(occurred.getMinutes()).padStart(2, '0')}`
 
-      // 加载已有图片
-      if (data.mediaIds.length > 0) {
-        const urlMap = await getTempFileUrls(data.mediaIds)
-        data.mediaIds.forEach((fileId) => {
-          form.images.push(urlMap[fileId] || fileId)
-          imageSource.value.push({ type: 'file', value: fileId })
-        })
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : '时刻加载失败'
-      uni.showToast({ title: message, icon: 'none' })
+    if (data.mediaIds.length) {
+      const urlMap = await getTempFileUrls(data.mediaIds)
+      data.mediaIds.forEach((fileId) => {
+        form.images.push(urlMap[fileId] || fileId)
+        imageSource.value.push({ type: 'file', value: fileId })
+      })
     }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '时刻加载失败'
+    uni.showToast({ title: message, icon: 'none' })
   }
 })
 
 function goBack() {
+  if (showMoodPicker.value) {
+    showMoodPicker.value = false
+    return
+  }
   if (showDateTimePicker.value) {
-    showDateTimePicker.value = false
+    cancelDateTimePicker()
     return
   }
   uni.navigateBack()
 }
 
 async function onSave() {
-  if (!form.content.trim()) {
-    uni.showToast({ title: '请写下这一刻的故事', icon: 'none' })
-    return
-  }
-
+  if (!canSave.value || saving.value) return
   saving.value = true
   try {
-    // 组装 occurredAt 时间戳
     const [year, month, day] = form.occurredAt.split('-').map(Number)
     const [hour, minute] = (form.occurredTime || '00:00').split(':').map(Number)
     const occurredAt = new Date(year, month - 1, day, hour, minute).getTime()
-
-    // 上传本地新图片，得到最终 mediaIds
     const mediaIds: string[] = []
-    for (const src of imageSource.value) {
-      if (src.type === 'file') {
-        mediaIds.push(src.value)
-      } else {
-        const fileId = await uploadImage(src.value)
-        mediaIds.push(fileId)
-      }
+
+    for (const source of imageSource.value) {
+      mediaIds.push(source.type === 'file' ? source.value : await uploadImage(source.value))
     }
 
     const payload = {
@@ -351,142 +382,159 @@ async function onSave() {
       await createMoment(payload)
     }
 
-    saving.value = false
     uni.showToast({ title: isEdit.value ? '修改成功' : '记录成功', icon: 'success' })
-    setTimeout(() => uni.navigateBack(), 1200)
+    setTimeout(() => uni.navigateBack(), 1000)
   } catch (error) {
-    saving.value = false
     const message = error instanceof Error ? error.message : '保存失败'
     uni.showToast({ title: message, icon: 'none' })
+  } finally {
+    saving.value = false
   }
 }
 </script>
 
 <style scoped lang="scss">
 .edit-page {
-  position: relative;
-  min-height: 100vh;
-  padding: calc(var(--love-safe-top) + 24rpx) var(--love-page-gutter)
-    calc(var(--love-safe-bottom) + 48rpx);
-  background: var(--love-color-bg);
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  background:
+    radial-gradient(circle at 6% 2%, rgba(247, 210, 201, 0.72), transparent 42%),
+    linear-gradient(180deg, #f8e5de 0%, #fbf1ea 25%, #fcf7f1 62%, #fbf6ef 100%);
+  color: #56453b;
 }
 
-/* 顶部导航 */
-.nav-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 88rpx;
-  margin-bottom: 24rpx;
-}
-
-.nav-back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 72rpx;
-  height: 72rpx;
-
-  .back-arrow {
-    width: 20rpx;
-    height: 20rpx;
-    border-left: 4rpx solid var(--love-color-text);
-    border-bottom: 4rpx solid var(--love-color-text);
-    transform: rotate(45deg);
-  }
-}
-
-.nav-title {
-  font-size: 34rpx;
-  font-weight: 600;
-  color: var(--love-color-text);
-}
-
-.nav-save {
-  font-size: 28rpx;
-  color: var(--love-color-primary);
-  font-weight: 600;
-  padding: 12rpx 24rpx;
-
-  &.disabled {
-    color: var(--love-color-text-secondary);
-    opacity: 0.5;
-  }
-}
-
-/* 内容输入区 */
-.content-area {
-  position: relative;
-  margin-bottom: 32rpx;
-}
-
-.content-textarea {
-  width: 100%;
-  min-height: 300rpx;
-  padding: 24rpx;
-  font-size: 30rpx;
-  color: var(--love-color-text);
-  line-height: 1.8;
-  background: var(--love-color-surface);
-  border-radius: var(--love-radius-medium);
-  border: 1rpx solid rgba(222, 205, 192, 0.4);
-}
-
-.textarea-placeholder {
-  color: var(--love-color-text-secondary);
-  opacity: 0.5;
-}
-
-.flower-deco {
+.edit-page::before {
   position: absolute;
-  right: 16rpx;
-  bottom: 16rpx;
-  width: 64rpx;
-  height: 64rpx;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    repeating-linear-gradient(18deg, rgba(133, 98, 75, 0.012) 0 1rpx, transparent 1rpx 7rpx),
+    repeating-linear-gradient(102deg, rgba(255, 255, 255, 0.07) 0 1rpx, transparent 1rpx 9rpx);
+  content: '';
   pointer-events: none;
 }
 
-.flower-small {
+.nav-bar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  height: calc(var(--menu-top) + var(--menu-height));
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding-top: var(--menu-top);
+}
+
+.nav-back {
+  position: absolute;
+  bottom: 0;
+  left: 35rpx;
+  display: flex;
+  width: 62rpx;
+  height: var(--menu-height);
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.nav-title {
+  color: #514137;
+  font-size: 35rpx;
+  font-weight: 600;
+  line-height: var(--menu-height);
+  letter-spacing: 1rpx;
+}
+
+.edit-scroll {
+  position: relative;
+  z-index: 2;
+  min-height: 0;
+  flex: 1;
+}
+
+.edit-content {
+  padding: 30rpx 39rpx 0;
+}
+
+.story-card,
+.photo-card,
+.settings-card {
+  border: 1rpx solid rgba(255, 255, 255, 0.92);
+  background: rgba(252, 247, 241, 0.83);
+  box-shadow:
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.92),
+    0 14rpx 32rpx rgba(100, 69, 50, 0.08);
+  backdrop-filter: blur(16rpx);
+  -webkit-backdrop-filter: blur(16rpx);
+}
+
+.story-card {
+  position: relative;
+  height: 350rpx;
+  padding: 34rpx 37rpx 52rpx;
+  border-radius: 28rpx;
+}
+
+.story-textarea {
   width: 100%;
   height: 100%;
-  opacity: 0.5;
+  padding: 0;
+  color: #5c4b40;
+  font-size: 29rpx;
+  line-height: 1.75;
 }
 
-/* 照片区域 */
-.photo-section {
-  margin-bottom: 32rpx;
+.story-placeholder {
+  color: #9b887c;
 }
 
-.section-header {
+.character-count {
+  position: absolute;
+  right: 34rpx;
+  bottom: 24rpx;
+  color: #9d897c;
+  font-size: 22rpx;
+}
+
+.photo-card {
+  margin-top: 30rpx;
+  padding: 27rpx 31rpx 31rpx;
+  border-radius: 28rpx;
+}
+
+.section-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20rpx;
 }
 
 .section-title {
-  font-size: 30rpx;
+  color: #514137;
+  font-size: 29rpx;
   font-weight: 600;
-  color: var(--love-color-text);
 }
 
-.section-limit {
-  font-size: 24rpx;
-  color: var(--love-color-text-secondary);
+.section-tip {
+  color: #9a8679;
+  font-size: 22rpx;
 }
 
 .photo-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16rpx;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14rpx;
+  margin-top: 22rpx;
 }
 
-.photo-item {
+.photo-item,
+.photo-add {
   position: relative;
-  aspect-ratio: 1;
-  border-radius: var(--love-radius-small);
+  width: 100%;
+  height: 184rpx;
   overflow: hidden;
+  border-radius: 18rpx;
 }
 
 .photo-image {
@@ -498,30 +546,13 @@ async function onSave() {
   position: absolute;
   top: 8rpx;
   right: 8rpx;
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.4);
   display: flex;
+  width: 34rpx;
+  height: 34rpx;
   align-items: center;
   justify-content: center;
-}
-
-.remove-icon {
-  width: 16rpx;
-  height: 2rpx;
-  background: #fff;
-  transform: rotate(45deg);
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    width: 16rpx;
-    height: 2rpx;
-    background: #fff;
-    transform: rotate(90deg);
-  }
+  border-radius: 50%;
+  background: rgba(66, 46, 38, 0.58);
 }
 
 .photo-add {
@@ -529,218 +560,250 @@ async function onSave() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1;
-  border-radius: var(--love-radius-small);
-  border: 2rpx dashed var(--love-color-primary-soft);
-  background: rgba(246, 211, 204, 0.1);
-  gap: 8rpx;
+  gap: 13rpx;
+  border: 2rpx dashed rgba(223, 119, 114, 0.55);
+  background: rgba(255, 252, 248, 0.45);
+  color: #755f53;
+  font-size: 22rpx;
 }
 
-.add-plus {
-  font-size: 48rpx;
-  color: var(--love-color-primary);
-  font-weight: 300;
-  line-height: 1;
-}
-
-.add-label {
-  font-size: 24rpx;
-  color: var(--love-color-primary);
-}
-
-/* 表单行 */
-.form-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 28rpx 0;
-  border-bottom: 1rpx solid var(--love-color-divider);
-  margin-bottom: 24rpx;
-}
-
-.form-label {
-  font-size: 28rpx;
-  color: var(--love-color-text);
-}
-
-.form-value-row {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-}
-
-.form-value {
-  font-size: 28rpx;
-  color: var(--love-color-text-secondary);
-}
-
-.arrow-right {
-  width: 14rpx;
-  height: 14rpx;
-  border-top: 3rpx solid var(--love-color-text-secondary);
-  border-right: 3rpx solid var(--love-color-text-secondary);
-  transform: rotate(45deg);
-  opacity: 0.4;
-}
-
-/* 心情选择 */
-.mood-section {
-  margin-bottom: 24rpx;
-}
-
-.mood-options {
-  display: flex;
-  gap: 16rpx;
-  margin-top: 20rpx;
-  flex-wrap: wrap;
-}
-
-.mood-tag {
-  padding: 12rpx 32rpx;
+.settings-card {
+  margin-top: 31rpx;
+  padding: 0 31rpx;
   border-radius: 28rpx;
-  font-size: 26rpx;
-  color: var(--love-color-text-secondary);
-  background: rgba(222, 205, 192, 0.2);
-  border: 1rpx solid transparent;
-  transition: all 0.2s ease;
-
-  &.active {
-    color: #fff;
-    border-color: transparent;
-  }
-
-  &.active.happy {
-    background: #e8a87c;
-  }
-
-  &.active.warm {
-    background: var(--love-color-primary);
-  }
-
-  &.active.calm {
-    background: #8fb9a8;
-  }
-
-  &.active.moved {
-    background: #c38d9e;
-  }
-
-  &.active.other {
-    background: var(--love-color-text-secondary);
-  }
 }
 
-/* 可见性 */
-.visibility-row {
+.setting-row {
   display: flex;
+  min-height: 100rpx;
   align-items: center;
   justify-content: space-between;
-  padding: 24rpx 0;
-  margin-bottom: 48rpx;
 }
 
-.visibility-info {
+.setting-row + .setting-row,
+.visibility-row {
+  border-top: 1rpx solid rgba(222, 205, 192, 0.48);
+}
+
+.setting-label,
+.setting-value {
+  display: flex;
+  align-items: center;
+}
+
+.setting-label {
+  gap: 18rpx;
+  color: #59473d;
+  font-size: 27rpx;
+  font-weight: 600;
+}
+
+.setting-icon {
+  flex: 0 0 auto;
+  opacity: 0.88;
+}
+
+.setting-value {
+  gap: 11rpx;
+  color: #867267;
+  font-size: 24rpx;
+}
+
+.mood-row {
+  padding: 24rpx 0 27rpx;
+  border-top: 1rpx solid rgba(222, 205, 192, 0.48);
+}
+
+.mood-heading {
+  margin-bottom: 21rpx;
+}
+
+.quick-moods {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 11rpx;
+}
+
+.quick-mood {
+  display: flex;
+  height: 61rpx;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  border: 1rpx solid rgba(222, 205, 192, 0.52);
+  border-radius: 17rpx;
+  background: rgba(248, 241, 234, 0.72);
+  color: #735f53;
+  font-size: 21rpx;
+  white-space: nowrap;
+}
+
+.quick-mood.active {
+  border-color: transparent;
+  background: linear-gradient(135deg, #ec817a, #dc696b);
+  box-shadow: 0 7rpx 17rpx rgba(207, 96, 92, 0.18);
+  color: #fff;
+}
+
+.visibility-label {
+  flex: 1;
+}
+
+.visibility-copy {
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 7rpx;
+}
+
+.visibility-title {
+  color: #59473d;
+  font-size: 27rpx;
+  font-weight: 600;
 }
 
 .visibility-tip {
-  font-size: 24rpx;
-  color: var(--love-color-text-secondary);
+  color: #9a8679;
+  font-size: 21rpx;
+  font-weight: 400;
 }
 
-.form-switch {
-  transform: scale(0.85);
-}
-
-/* 保存按钮 */
-.action-area {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.visibility-switch {
+  flex: 0 0 auto;
+  transform: scale(0.82);
+  transform-origin: right center;
 }
 
 .save-button {
   display: flex;
+  width: 474rpx;
+  height: 88rpx;
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  width: 100%;
-  height: 96rpx;
-  border-radius: 48rpx;
-  background: var(--love-color-primary);
+  margin: 36rpx auto 0;
+  padding: 0;
+  border-radius: 46rpx;
+  background: linear-gradient(135deg, #ec817a 0%, #dc696b 100%);
+  box-shadow: 0 12rpx 28rpx rgba(207, 96, 91, 0.24);
   color: #fff;
-  font-size: 32rpx;
-  font-weight: 600;
-  border: none;
-  box-shadow: 0 8rpx 24rpx rgba(219, 116, 112, 0.25);
-
-  &:active {
-    opacity: 0.9;
-    transform: scale(0.98);
-  }
+  font-size: 30rpx;
+  font-weight: 500;
+  line-height: 88rpx;
 }
 
-/* 选择器 */
+.save-button.is-disabled,
+.save-button[disabled] {
+  background: linear-gradient(135deg, #efa49e 0%, #e99596 100%);
+  box-shadow: 0 9rpx 22rpx rgba(208, 105, 101, 0.14);
+  color: #fff !important;
+  opacity: 1;
+  -webkit-text-fill-color: #fff;
+}
+
+.save-button.is-disabled text,
+.save-button[disabled] text {
+  color: #fff !important;
+  opacity: 1;
+}
+
+.save-button::after {
+  border: 0;
+}
+
+.bottom-space {
+  height: 150rpx;
+}
+
+.bottom-bouquet {
+  position: absolute;
+  bottom: -65rpx;
+  left: -42rpx;
+  z-index: 1;
+  width: 300rpx;
+  height: 245rpx;
+  opacity: 0.42;
+  pointer-events: none;
+}
+
 .picker-mask {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 70;
   display: flex;
   align-items: flex-end;
-  background: rgba(58, 42, 33, 0.34);
+  background: rgba(61, 47, 40, 0.4);
 }
 
 .picker-sheet {
   width: 100%;
-  padding: 18rpx 0 calc(var(--love-safe-bottom) + 24rpx);
+  padding: 17rpx 28rpx calc(env(safe-area-inset-bottom) + 24rpx);
   border-radius: 38rpx 38rpx 0 0;
-  background: var(--love-color-surface);
+  background: #fcf7f1;
   box-shadow: 0 -18rpx 54rpx rgba(65, 44, 31, 0.16);
 }
 
 .picker-handle {
   width: 70rpx;
   height: 7rpx;
-  margin: 0 auto 28rpx;
+  margin: 0 auto 26rpx;
   border-radius: 4rpx;
-  background: #dfd5cc;
+  background: #ddd2ca;
 }
 
 .picker-title {
-  text-align: center;
-  font-size: 30rpx;
+  display: block;
+  color: #514137;
+  font-size: 31rpx;
   font-weight: 600;
-  color: var(--love-color-text);
-  margin-bottom: 16rpx;
+  text-align: center;
 }
 
 .datetime-picker {
-  height: 440rpx;
+  width: 100%;
+  height: 390rpx;
+  margin-top: 12rpx;
 }
 
 .picker-item {
   display: flex;
+  height: 88rpx;
   align-items: center;
   justify-content: center;
-  height: 88rpx;
-  font-size: 30rpx;
-  color: var(--love-color-text);
+  color: #5e4d42;
+  font-size: 25rpx;
+}
+
+.picker-actions {
+  display: flex;
+  gap: 20rpx;
+  padding: 18rpx 6rpx 0;
+}
+
+.picker-action {
+  display: flex;
+  height: 78rpx;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  line-height: 78rpx;
+}
+
+.picker-action::after {
+  border: 0;
+}
+
+.picker-cancel {
+  color: #77685e;
+  background: #f2ebe4;
 }
 
 .picker-confirm {
-  margin: 16rpx 48rpx 0;
-  padding: 24rpx 0;
-  text-align: center;
-  border-radius: 48rpx;
-  background: var(--love-color-primary);
   color: #fff;
-  font-size: 30rpx;
-  font-weight: 600;
-
-  &:active {
-    opacity: 0.9;
-  }
+  background: linear-gradient(135deg, #eb7e77 0%, #dd696b 100%);
+  box-shadow: 0 8rpx 20rpx rgba(208, 96, 91, 0.2);
 }
 </style>

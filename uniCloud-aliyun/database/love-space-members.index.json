@@ -1,0 +1,4 @@
+[
+  { "IndexName": "space_uid_status", "MgoKeySchema": { "MgoIndexKeys": [{ "Name": "spaceId", "Direction": "1" }, { "Name": "uid", "Direction": "1" }, { "Name": "status", "Direction": "1" }], "MgoIsUnique": false } },
+  { "IndexName": "uid_status_active", "MgoKeySchema": { "MgoIndexKeys": [{ "Name": "uid", "Direction": "1" }, { "Name": "status", "Direction": "1" }, { "Name": "lastActiveAt", "Direction": "-1" }], "MgoIsUnique": false } }
+]

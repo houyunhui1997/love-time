@@ -1,0 +1,12 @@
+{
+  "bsonType": "object",
+  "description": "空间码加入限流记录",
+  "required": ["uid", "success", "createdAt"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false, "count": false },
+  "properties": {
+    "_id": { "description": "系统主键" },
+    "uid": { "bsonType": "string" },
+    "success": { "bsonType": "bool" },
+    "createdAt": { "bsonType": "long" }
+  }
+}

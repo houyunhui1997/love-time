@@ -42,7 +42,32 @@ export interface Anniversary {
   revision: number
 }
 
-export type MomentMood = 'happy' | 'warm' | 'calm' | 'moved' | 'other'
+export type MomentMood =
+  | 'happy'
+  | 'sweet'
+  | 'surprised'
+  | 'expectant'
+  | 'excited'
+  | 'proud'
+  | 'warm'
+  | 'secure'
+  | 'moved'
+  | 'missing'
+  | 'shy'
+  | 'heartbeat'
+  | 'calm'
+  | 'relaxed'
+  | 'healed'
+  | 'content'
+  | 'daily'
+  | 'relieved'
+  | 'sad'
+  | 'wronged'
+  | 'tired'
+  | 'angry'
+  | 'lonely'
+  | 'lost'
+  | 'other'
 
 export interface Moment {
   _id: string

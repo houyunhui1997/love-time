@@ -1,0 +1,4 @@
+[
+  { "IndexName": "owner_unique", "MgoKeySchema": { "MgoIndexKeys": [{ "Name": "ownerUid", "Direction": "1" }], "MgoIsUnique": true } },
+  { "IndexName": "code_unique", "MgoKeySchema": { "MgoIndexKeys": [{ "Name": "code", "Direction": "1" }], "MgoIsUnique": true } }
+]

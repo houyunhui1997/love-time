@@ -1,22 +1,27 @@
 'use strict'
 
 const uniIdCommon = require('uni-id-common')
-const { success, normalizeError, AppError, API_CODE, requireString } = require('love-common')
+const {
+  success,
+  normalizeError,
+  AppError,
+  API_CODE,
+  requireString,
+  normalizeGender,
+  ensurePersonalSpace,
+  getActiveSpace,
+  getSpaceMembers,
+  listActiveMemberships
+} = require('love-common')
 const db = uniCloud.database()
 const dbCmd = db.command
-const profiles = db.collection('love-profiles')
+const spaces = db.collection('love-spaces')
 const users = db.collection('uni-id-users')
 
 async function requireAuth(context) {
   const auth = await context.uniIdCommon.checkToken(context.getUniIdToken())
   if (auth.errCode || !auth.uid) throw new AppError(API_CODE.UNAUTHORIZED, '登录状态已失效，请重新登录')
   return auth
-}
-
-function normalizeGender(value) {
-  if (value === 'male' || value === 1) return 'male'
-  if (value === 'female' || value === 2) return 'female'
-  return null
 }
 
 function toClientAccount(user) {
@@ -27,35 +32,54 @@ function toClientAccount(user) {
   }
 }
 
-function toClientProfile(profile) {
-  if (!profile) return null
-  return {
-    _id: profile._id,
-    selfName: profile.selfName,
-    partnerName: profile.partnerName,
-    loveStartDate: profile.loveStartDate,
-    selfGender: profile.selfGender,
-    selfAvatarFileId: profile.selfAvatarFileId || null,
-    partnerAvatarFileId: profile.partnerAvatarFileId || null,
-    revision: profile.revision || 1
-  }
-}
-
 function validateDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new AppError(API_CODE.INVALID_PARAMS, '在一起日期格式不正确')
   }
-
   const [year, month, day] = value.split('-').map(Number)
   const parsed = new Date(Date.UTC(year, month - 1, day))
   const isRealDate = parsed.getUTCFullYear() === year
     && parsed.getUTCMonth() === month - 1
     && parsed.getUTCDate() === day
   if (!isRealDate) throw new AppError(API_CODE.INVALID_PARAMS, '在一起日期不正确')
-
   const chinaToday = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10)
   if (value > chinaToday) throw new AppError(API_CODE.INVALID_PARAMS, '在一起日期不能晚于今天')
   return value
+}
+
+async function toClientProfile(uid) {
+  const active = await getActiveSpace(uid)
+  const memberList = await getSpaceMembers(active.space._id)
+  const allMemberships = await listActiveMemberships(uid)
+  const self = memberList.find(item => item.uid === uid)
+  const partner = memberList.find(item => item.uid !== uid) || null
+  const owned = await ensurePersonalSpace(uid)
+  return {
+    _id: active.space._id,
+    coupleId: memberList.length === 2 ? active.space._id : null,
+    spaceId: active.space._id,
+    spaceName: active.space.name,
+    spaceCode: active.space.code,
+    ownedSpaceId: owned._id,
+    isOwnedSpace: active.space.ownerUid === uid,
+    isCouple: memberList.length === 2,
+    selfName: self?.nickname || '恋时光用户',
+    partnerName: partner?.nickname || '',
+    loveStartDate: active.space.relationStartDate || '',
+    selfGender: self?.gender || null,
+    selfAvatarFileId: self?.avatarFileId || null,
+    partnerAvatarFileId: partner?.avatarFileId || null,
+    members: memberList,
+    spaces: allMemberships.map(item => ({
+      _id: item.space._id,
+      name: item.space.name,
+      code: item.space.code,
+      memberCount: item.space.memberCount || 1,
+      isOwned: item.space.ownerUid === uid,
+      isActive: item.space._id === active.space._id
+    })),
+    revision: active.space.revision || 1
+  }
 }
 
 module.exports = {
@@ -69,103 +93,56 @@ module.exports = {
       const result = await users.doc(auth.uid).get()
       const user = result.data && result.data[0]
       if (!user) throw new AppError(API_CODE.NOT_FOUND, '账号不存在')
+      await ensurePersonalSpace(auth.uid)
       return success(toClientAccount(user))
     } catch (error) {
       return normalizeError(error)
     }
   },
 
-  // 查询必须是只读操作；没有档案时明确返回 null。
   async getMine() {
     try {
       const auth = await requireAuth(this)
-      const existing = await profiles.where({ ownerUid: auth.uid }).limit(1).get()
-      return success(toClientProfile(existing.data[0] || null))
+      await ensurePersonalSpace(auth.uid)
+      return success(await toClientProfile(auth.uid))
     } catch (error) {
       return normalizeError(error)
     }
   },
 
-  // 登录只维护账号资料，不再创建带默认值的恋爱档案。
   async saveLoginProfile(params = {}) {
     try {
       const auth = await requireAuth(this)
       const gender = params.gender
       const nickname = typeof params.nickname === 'string' ? params.nickname.trim() : ''
       const avatarFileId = typeof params.avatarFileId === 'string' && params.avatarFileId ? params.avatarFileId : null
-
       if (!['male', 'female'].includes(gender)) throw new AppError(API_CODE.INVALID_PARAMS, '请选择性别')
       if (!nickname || nickname.length > 20) throw new AppError(API_CODE.INVALID_PARAMS, '请输入1至20个字符的昵称')
-
-      const userUpdate = {
-        nickname,
-        gender: gender === 'male' ? 1 : 2
-      }
+      const userUpdate = { nickname, gender: gender === 'male' ? 1 : 2 }
       if (avatarFileId) userUpdate.avatar = avatarFileId
       await users.doc(auth.uid).update(userUpdate)
-
+      await ensurePersonalSpace(auth.uid)
       return success({ nickname, gender, avatarFileId })
     } catch (error) {
       return normalizeError(error)
     }
   },
 
-  // 首次填写时创建；后续再次保存时更新同一份档案。
   async saveLoveProfile(params = {}) {
     try {
       const auth = await requireAuth(this)
-      const selfName = requireString(params.selfName, '我的称呼', { maxLength: 12 })
-      const partnerName = requireString(params.partnerName, '对方称呼', { maxLength: 12 })
+      const active = await getActiveSpace(auth.uid)
+      const spaceName = requireString(params.spaceName || active.space.name, '空间名称', { maxLength: 20 })
       const loveStartDate = validateDate(params.loveStartDate)
-      const partnerAvatarFileId = typeof params.partnerAvatarFileId === 'string' && params.partnerAvatarFileId
-        ? params.partnerAvatarFileId
-        : null
-
-      const userResult = await users.doc(auth.uid).get()
-      const user = userResult.data && userResult.data[0]
-      if (!user) throw new AppError(API_CODE.NOT_FOUND, '账号不存在')
-      const selfGender = normalizeGender(user.gender)
-      if (!selfGender) throw new AppError(API_CODE.INVALID_PARAMS, '请先完善账号性别')
-
-      const existingResult = await profiles.where({ ownerUid: auth.uid }).limit(1).get()
-      const existing = existingResult.data[0]
-      const now = Date.now()
-
-      if (existing) {
-        const updateData = {
-          selfName,
-          partnerName,
-          loveStartDate,
-          selfGender,
-          selfAvatarFileId: user.avatar || null,
-          partnerAvatarFileId,
-          updatedAt: now,
-          revision: dbCmd.inc(1)
-        }
-        await profiles.doc(existing._id).update(updateData)
-        return success(toClientProfile({
-          ...existing,
-          ...updateData,
-          revision: (existing.revision || 0) + 1
-        }))
-      }
-
-      const profile = {
-        ownerUid: auth.uid,
-        coupleId: null,
-        selfName,
-        partnerName,
-        selfAvatarFileId: user.avatar || null,
-        selfGender,
-        partnerAvatarFileId,
-        loveStartDate,
-        theme: 'warm-paper',
-        createdAt: now,
-        updatedAt: now,
-        revision: 1
-      }
-      const inserted = await profiles.add(profile)
-      return success(toClientProfile({ _id: inserted.id, ...profile }))
+      const revision = Number(params.revision || active.space.revision)
+      const updated = await spaces.where({ _id: active.space._id, revision }).update({
+        name: spaceName,
+        relationStartDate: loveStartDate,
+        updatedAt: Date.now(),
+        revision: dbCmd.inc(1)
+      })
+      if (!updated.updated) throw new AppError(API_CODE.REVISION_CONFLICT, '空间资料已变化，请刷新后重试')
+      return success(await toClientProfile(auth.uid))
     } catch (error) {
       return normalizeError(error)
     }
