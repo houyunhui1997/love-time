@@ -6,7 +6,7 @@
     </view>
 
     <view v-if="isLoggedIn" class="identity-card dual-members">
-      <view class="member-slot">
+      <view class="member-slot" @tap="openLoginPanel">
         <image v-if="accountAvatar" class="account-avatar" :src="accountAvatar" mode="aspectFill" />
         <view v-else class="account-avatar avatar-fallback"><uni-icons type="person-filled" size="28" color="#d77873" /></view>
         <text class="member-name">{{ accountName }}</text>
@@ -23,6 +23,12 @@
       </view>
     </view>
 
+    <view v-if="isLoggedIn && !accountCompleted" class="profile-incomplete-card">
+      <text class="profile-incomplete-title">让另一半更容易认出你</text>
+      <text class="profile-incomplete-copy">头像、昵称和性别均为选填，不完善也可以继续使用</text>
+      <button class="profile-incomplete-button" @tap="openLoginPanel">完善个人资料</button>
+    </view>
+
     <view v-if="isLoggedIn && profile" class="archive-card" @tap="openLoveProfile">
       <image class="archive-art" src="/static/profile/love-archive-clean.jpg" mode="aspectFill" />
       <text class="archive-heading">{{ profile.spaceName }}</text>
@@ -31,8 +37,8 @@
       <view class="days-copy">
         <text class="together-label">在一起</text>
         <view class="days-line">
-          <text class="days-number">{{ togetherDays }}</text>
-          <text class="days-unit">天</text>
+          <text class="days-number">{{ profile.loveStartDate ? togetherDays : '--' }}</text>
+          <text v-if="profile.loveStartDate" class="days-unit">天</text>
         </view>
         <text class="start-date">始于 {{ displayStartDate }}</text>
       </view>
@@ -42,9 +48,9 @@
       <view class="guest-avatar">
         <uni-icons type="person-filled" size="34" color="#d77873" />
       </view>
-      <text class="guest-title">登录恋时光</text>
-      <text class="guest-tip">登录后可查看恋爱资料与个人设置</text>
-      <button class="login-button" @tap="openLoginPanel"><text>登　录</text></button>
+      <text class="guest-title">暂时无法连接恋时光</text>
+      <text class="guest-tip">请检查网络后重新连接</text>
+      <button class="login-button" @tap="loadProfilePage"><text>重新连接</text></button>
     </view>
 
     <template v-if="isLoggedIn">
@@ -66,7 +72,7 @@
       </view>
     </template>
 
-    <LoveLoginDialog v-model="showLoginPanel" @success="onLoginSuccess" />
+    <LoveLoginDialog v-model="showLoginPanel" :account="account" @success="onLoginSuccess" />
   </view>
 </template>
 
@@ -119,6 +125,7 @@ interface MenuItem {
 
 const menuGroups: MenuItem[][] = [
   [
+    { label: '个人资料', icon: 'person', caption: '头像、昵称与性别' },
     { label: '情侣空间', icon: 'heart', caption: '成员、邀请与切换' },
     { label: '恋爱资料', icon: 'contact', caption: '空间名称与恋爱日期' },
     { label: '提醒设置', icon: 'notification', caption: '重要日子不遗漏' },
@@ -145,20 +152,17 @@ const routeByMenu: Record<string, string> = {
 const today = formatBusinessDate(new Date())
 const accountName = computed(() => account.value?.nickname || profile.value?.selfName || '恋时光用户')
 const accountAvatar = computed(() => account.value?.avatarFileId || profile.value?.selfAvatarFileId || '')
+const accountCompleted = computed(() => Boolean(account.value?.nickname || account.value?.avatarFileId || account.value?.gender))
 const togetherDays = computed(() => profile.value?.loveStartDate ? Math.max(0, differenceInCalendarDays(today, profile.value.loveStartDate)) : 0)
 const displayStartDate = computed(() => profile.value?.loveStartDate.replace(/-/g, '.') || '待设置')
 
 onShow(loadProfilePage)
 
 async function loadProfilePage() {
-  const shouldOpenLoginPanel = Boolean(uni.getStorageSync('love_open_login_panel'))
-  if (shouldOpenLoginPanel) uni.removeStorageSync('love_open_login_panel')
-
   isLoggedIn.value = await restoreWeixinSession()
   if (!isLoggedIn.value) {
     account.value = null
     profile.value = null
-    if (shouldOpenLoginPanel) showLoginPanel.value = true
     return
   }
 
@@ -188,7 +192,6 @@ function openLoginPanel() {
 
 function onLoginSuccess(accountResult: AccountProfile) {
   account.value = accountResult
-  isLoggedIn.value = true
   void loadProfilePage()
 }
 
@@ -201,6 +204,11 @@ function openInvite() {
 }
 
 function openMenu(label: string) {
+  if (label === '个人资料') {
+    openLoginPanel()
+    return
+  }
+
   if (label === '恋爱资料') {
     openLoveProfile()
     return

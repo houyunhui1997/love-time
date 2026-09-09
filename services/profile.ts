@@ -53,8 +53,8 @@ interface ApiResponse<T> {
 }
 
 export interface SaveLoginProfileParams {
-  gender: Gender
-  nickname: string
+  gender?: Gender | null
+  nickname?: string
   avatarFileId?: string | null
 }
 
@@ -89,7 +89,7 @@ export async function getMyLoveProfile(): Promise<LoveProfile | null> {
 
 export async function saveMyLoginProfile(params: SaveLoginProfileParams): Promise<AccountProfile> {
   const result = await getProfileCloudObject().saveLoginProfile(params)
-  if (result.code !== 0 || !result.data) throw new Error(result.message || '登录资料保存失败')
+  if (result.code !== 0 || !result.data) throw new Error(result.message || '个人资料保存失败')
   return result.data
 }
 

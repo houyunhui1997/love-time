@@ -220,7 +220,7 @@ async function loadAllItems() {
 onShow(async () => {
   const loggedIn = await restoreWeixinSession()
   if (!loggedIn) {
-    uni.showToast({ title: '请先登录', icon: 'none' })
+    uni.showToast({ title: '暂时无法连接服务', icon: 'none' })
     setTimeout(goBack, 500)
     return
   }

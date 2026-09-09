@@ -9,12 +9,12 @@
           src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-heart-emblem.png"
           mode="aspectFit"
         />
-        <text class="dialog-title">登录恋时光</text>
-        <text class="dialog-subtitle">登录后，珍藏每一个重要日子</text>
+        <text class="dialog-title">完善个人资料</text>
+        <text class="dialog-subtitle">资料仅用于你们的空间展示，可随时修改</text>
       </view>
 
       <button class="avatar-picker" open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
-        <image v-if="avatarTempPath" class="avatar-image" :src="avatarTempPath" mode="aspectFill" />
+        <image v-if="avatarPreview" class="avatar-image" :src="avatarPreview" mode="aspectFill" />
         <image v-else class="avatar-placeholder-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-avatar-couple.png" mode="aspectFit" />
         <view class="camera-badge">
           <uni-icons type="camera-filled" size="17" color="#ffffff" />
@@ -28,12 +28,12 @@
           class="nickname-input"
           type="nickname"
           maxlength="20"
-          placeholder="使用微信昵称"
+          placeholder="昵称（选填）"
           placeholder-class="input-placeholder"
         />
       </view>
 
-      <text class="gender-title">选择你的性别</text>
+      <text class="gender-title">选择你的性别（选填）</text>
       <view class="gender-options">
         <view
           class="gender-option"
@@ -56,24 +56,25 @@
       <button class="login-button" :disabled="submitting" @tap="confirmLogin">
         <LoveLoading v-if="submitting" size="mini" text="" :mask="false" />
         <text class="login-button-label" :class="{ spaced: !submitting }">
-          {{ submitting ? '正在登录…' : '登录' }}
+          {{ submitting ? '正在保存…' : '保存资料' }}
         </text>
       </button>
-      <text class="agreement">登录即表示你同意《用户协议》和《隐私政策》</text>
+      <text class="agreement">暂不完善也不会影响纪念日和时光记录功能</text>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import LoveLoading from '@/components/base/LoveLoading.vue'
-import { loginByWeixin } from '@/services/auth'
+import { getCurrentUserId, restoreWeixinSession } from '@/services/auth'
 import { saveMyLoginProfile, type AccountProfile } from '@/services/profile'
 
 type Gender = 'male' | 'female'
 
 const props = defineProps<{
   modelValue: boolean
+  account?: AccountProfile | null
 }>()
 
 const emit = defineEmits<{
@@ -86,6 +87,7 @@ const selectedGender = ref<Gender | ''>('')
 const nickname = ref('')
 const avatarTempPath = ref('')
 const isShortScreen = Number(uni.getSystemInfoSync().windowHeight || 0) < 720
+const avatarPreview = computed(() => avatarTempPath.value || props.account?.avatarFileId || '')
 let tabBarHidden = false
 
 function setTabBarHidden(hidden: boolean) {
@@ -96,11 +98,14 @@ function setTabBarHidden(hidden: boolean) {
   else uni.showTabBar(options)
 }
 
-watch(
-  () => props.modelValue,
-  visible => setTabBarHidden(visible),
-  { immediate: true }
-)
+watch(() => props.modelValue, (visible) => {
+  setTabBarHidden(visible)
+  if (visible) {
+    nickname.value = props.account?.nickname || ''
+    selectedGender.value = props.account?.gender || ''
+    avatarTempPath.value = ''
+  }
+}, { immediate: true })
 
 onBeforeUnmount(() => setTabBarHidden(false))
 
@@ -129,26 +134,25 @@ function resetForm() {
 }
 
 async function confirmLogin() {
-  if (!selectedGender.value) return uni.showToast({ title: '请先选择性别', icon: 'none' })
-  if (!avatarTempPath.value) return uni.showToast({ title: '请选择微信头像', icon: 'none' })
-  if (!nickname.value.trim()) return uni.showToast({ title: '请输入微信昵称', icon: 'none' })
   if (submitting.value) return
 
   submitting.value = true
   try {
-    const uid = await loginByWeixin()
+    const ready = await restoreWeixinSession()
+    const uid = getCurrentUserId()
+    if (!ready || !uid) throw new Error('账号连接失败，请稍后重试')
     const avatarFileId = await uploadAvatar(uid)
     const account = await saveMyLoginProfile({
-      gender: selectedGender.value,
-      nickname: nickname.value.trim(),
-      avatarFileId
+      gender: selectedGender.value || undefined,
+      nickname: nickname.value.trim() || undefined,
+      avatarFileId: avatarFileId || undefined
     })
     emit('success', account)
     emit('update:modelValue', false)
     resetForm()
-    uni.showToast({ title: '登录成功', icon: 'success' })
+    uni.showToast({ title: '资料已保存', icon: 'success' })
   } catch (error) {
-    const message = error instanceof Error ? error.message : '登录失败，请稍后重试'
+    const message = error instanceof Error ? error.message : '资料保存失败，请稍后重试'
     uni.showToast({ title: message, icon: 'none', duration: 2800 })
   } finally {
     submitting.value = false

@@ -124,12 +124,30 @@ async function ensurePersonalSpace(uid) {
       updatedAt: now,
       revision: 1
     }
-    const inserted = await spaces.add(record)
-    space = { _id: inserted.id, ...record }
+    try {
+      const inserted = await spaces.add(record)
+      space = { _id: inserted.id, ...record }
+    } catch (error) {
+      const concurrentResult = await spaces.where({ ownerUid: uid, status: 'active' }).limit(1).get()
+      space = concurrentResult.data[0]
+      if (!space) throw error
+    }
   }
 
-  const ownerMembership = await members.where({ spaceId: space._id, uid, status: 'active' }).limit(1).get()
-  if (!ownerMembership.data.length) {
+  const ownerMembership = await members.where({ spaceId: space._id, uid }).limit(1).get()
+  if (ownerMembership.data.length) {
+    const membership = ownerMembership.data[0]
+    if (membership.status !== 'active' || membership.role !== 'owner') {
+      await members.doc(membership._id).update({
+        role: 'owner',
+        status: 'active',
+        joinedAt: Date.now(),
+        leftAt: null,
+        lastActiveAt: Date.now(),
+        updatedAt: Date.now()
+      })
+    }
+  } else {
     const now = Date.now()
     await members.add({
       spaceId: space._id,

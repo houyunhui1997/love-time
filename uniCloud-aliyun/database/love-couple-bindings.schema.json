@@ -1,12 +1,41 @@
 {
   "bsonType": "object",
-  "required": ["uid", "spaceId", "partnerUid", "createdAt"],
-  "permission": { "read": false, "create": false, "update": false, "delete": false },
+  "required": ["uid", "spaceId", "partnerUid", "status", "createdAt", "updatedAt"],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
   "properties": {
-    "_id": { "description": "系统自动生成" },
-    "uid": { "bsonType": "string" },
-    "spaceId": { "bsonType": "string" },
-    "partnerUid": { "bsonType": "string" },
-    "createdAt": { "bsonType": "timestamp" }
+    "_id": {
+      "description": "系统自动生成"
+    },
+    "uid": {
+      "bsonType": "string",
+      "description": "绑定关系所属用户"
+    },
+    "spaceId": {
+      "bsonType": "string",
+      "description": "情侣空间ID"
+    },
+    "partnerUid": {
+      "bsonType": "string",
+      "description": "另一半用户ID"
+    },
+    "status": {
+      "enum": ["active", "ended"],
+      "description": "当前绑定状态"
+    },
+    "endedAt": {
+      "bsonType": ["timestamp", "null"],
+      "description": "解绑时间"
+    },
+    "createdAt": {
+      "bsonType": "timestamp"
+    },
+    "updatedAt": {
+      "bsonType": "timestamp"
+    }
   }
 }

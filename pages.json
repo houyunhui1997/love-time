@@ -52,15 +52,5 @@
         "selectedIconPath": "static/tabbar/profile-active.png"
       }
     ]
-  },
-  "uniIdRouter": {
-    "loginPage": "pages/profile/index",
-    "needLogin": [
-      "pages/onboarding/profile",
-      "pages/profile/love-profile",
-      "pages/couple/.*",
-      "pages/settings/.*"
-    ],
-    "resToLogin": true
   }
 }

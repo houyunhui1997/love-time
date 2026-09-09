@@ -114,16 +114,30 @@ module.exports = {
   async saveLoginProfile(params = {}) {
     try {
       const auth = await requireAuth(this)
-      const gender = params.gender
-      const nickname = typeof params.nickname === 'string' ? params.nickname.trim() : ''
-      const avatarFileId = typeof params.avatarFileId === 'string' && params.avatarFileId ? params.avatarFileId : null
-      if (!['male', 'female'].includes(gender)) throw new AppError(API_CODE.INVALID_PARAMS, '请选择性别')
-      if (!nickname || nickname.length > 20) throw new AppError(API_CODE.INVALID_PARAMS, '请输入1至20个字符的昵称')
-      const userUpdate = { nickname, gender: gender === 'male' ? 1 : 2 }
-      if (avatarFileId) userUpdate.avatar = avatarFileId
-      await users.doc(auth.uid).update(userUpdate)
+      const result = await users.doc(auth.uid).get()
+      const user = result.data && result.data[0]
+      if (!user) throw new AppError(API_CODE.NOT_FOUND, '账号不存在')
+
+      const userUpdate = {}
+      if (params.nickname !== undefined) {
+        const nickname = typeof params.nickname === 'string' ? params.nickname.trim() : ''
+        if (nickname.length > 20) throw new AppError(API_CODE.INVALID_PARAMS, '昵称不能超过20个字符')
+        userUpdate.nickname = nickname
+      }
+      if (params.gender !== undefined) {
+        if (params.gender !== null && !['male', 'female'].includes(params.gender)) {
+          throw new AppError(API_CODE.INVALID_PARAMS, '性别格式不正确')
+        }
+        userUpdate.gender = params.gender === 'male' ? 1 : params.gender === 'female' ? 2 : 0
+      }
+      if (params.avatarFileId !== undefined) {
+        userUpdate.avatar = typeof params.avatarFileId === 'string' ? params.avatarFileId : ''
+      }
+      if (Object.keys(userUpdate).length) await users.doc(auth.uid).update(userUpdate)
       await ensurePersonalSpace(auth.uid)
-      return success({ nickname, gender, avatarFileId })
+      const updatedResult = await users.doc(auth.uid).get()
+      const updatedUser = updatedResult.data && updatedResult.data[0]
+      return success(toClientAccount(updatedUser || user))
     } catch (error) {
       return normalizeError(error)
     }

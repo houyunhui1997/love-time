@@ -12,30 +12,31 @@
       <text class="nav-title">恋时光纪念日</text>
     </view>
 
-    <!-- 未登录状态 -->
-    <view v-if="!isLoggedIn" class="guest-home">
+    <!-- 静默登录失败时保留明确的重试入口，不要求用户填写资料。 -->
+    <view v-if="sessionError" class="guest-home">
       <image
         class="guest-hero-art"
         src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-hero-memory-book.png"
         mode="aspectFit"
       />
-      <text class="guest-heading">从今天开始，记录我们的故事</text>
-      <button class="guest-login-button" @tap="goToLogin">
-        <uni-icons type="weixin" size="25" color="#ffffff" />
-        <text>微信登录</text>
+      <text class="guest-heading">暂时无法连接恋时光</text>
+      <text class="guest-subtitle">请检查网络后重新连接</text>
+      <button class="guest-login-button" @tap="retrySession">
+        <text>重新连接</text>
       </button>
     </view>
 
-    <template v-else-if="profile?.loveStartDate">
+    <template v-else>
       <!-- 主视觉区 -->
       <view class="hero-section">
         <view class="together-block">
-          <text class="together-label">我们在一起</text>
-          <view class="days-row">
+          <text class="together-label">{{ profile?.loveStartDate ? '我们在一起' : '开始记录我们的故事' }}</text>
+          <view v-if="profile?.loveStartDate" class="days-row">
             <text class="days-number">{{ togetherDays }}</text>
             <text class="days-unit">天</text>
           </view>
-          <text class="start-date">始于 {{ displayStartDate }}</text>
+          <text v-if="profile?.loveStartDate" class="start-date">始于 {{ displayStartDate }}</text>
+          <text v-else class="profile-guide" @tap="goToProfileSetup">设置在一起日期后，可查看相伴天数 ›</text>
         </view>
         <view class="hero-illustration">
           <image
@@ -111,18 +112,6 @@
       </view>
     </template>
 
-    <view v-else-if="!loading" class="profile-setup-home">
-      <image
-        class="profile-setup-art"
-        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-hero-memory-book.png"
-        mode="aspectFit"
-      />
-      <text class="profile-setup-title">建立你们的恋爱档案</text>
-      <text class="profile-setup-copy">设置空间名称和在一起日期后，首页才会开始记录相伴时光</text>
-      <button class="profile-setup-button" @tap="goToProfileSetup">去填写资料</button>
-    </view>
-
-    <LoveLoginDialog v-model="showLoginDialog" @success="onLoginSuccess" />
     <LoveLoading :visible="loading" fullscreen text="正在加载纪念日" />
   </view>
 </template>
@@ -130,11 +119,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import { differenceInCalendarDays, formatBusinessDate, getNextYearlyOccurrence } from '@/utils/date'
-import { getMyLoveProfile, type AccountProfile, type LoveProfile } from '@/services/profile'
-import { hasValidSession, restoreWeixinSession } from '@/services/auth'
+import { getMyLoveProfile, type LoveProfile } from '@/services/profile'
+import { restoreWeixinSession } from '@/services/auth'
 import { listAnniversaries, type AnniversaryListItem } from '@/services/anniversary'
 
 const systemInfo = uni.getSystemInfoSync()
@@ -194,8 +182,7 @@ const displayStartDate = computed(() => {
 const recentAnniversaries = ref<AnniversaryItem[]>([])
 const loading = ref(false)
 const empty = ref(false)
-const isLoggedIn = ref(false)
-const showLoginDialog = ref(false)
+const sessionError = ref(false)
 
 function mapItem(item: AnniversaryListItem): AnniversaryItem {
   const isYearly = item.repeatType === 'yearly'
@@ -222,10 +209,6 @@ function mapItem(item: AnniversaryListItem): AnniversaryItem {
 }
 
 async function loadData() {
-  if (!hasValidSession()) {
-    loading.value = false
-    return
-  }
   loading.value = true
   try {
     profile.value = await getMyLoveProfile()
@@ -256,10 +239,12 @@ async function loadData() {
 
 onShow(async () => {
   loading.value = true
-  isLoggedIn.value = await restoreWeixinSession()
-  if (!isLoggedIn.value) {
+  sessionError.value = false
+  const ready = await restoreWeixinSession()
+  if (!ready) {
     recentAnniversaries.value = []
     empty.value = false
+    sessionError.value = true
     loading.value = false
     return
   }
@@ -278,14 +263,15 @@ function goToAdd() {
   uni.navigateTo({ url: '/pages/anniversary/edit' })
 }
 
-function goToLogin() {
-  showLoginDialog.value = true
-}
-
-async function onLoginSuccess(_account: AccountProfile) {
-  isLoggedIn.value = true
-  await loadData()
-  if (!profile.value?.loveStartDate) goToProfileSetup()
+async function retrySession() {
+  loading.value = true
+  sessionError.value = false
+  const ready = await restoreWeixinSession()
+  if (ready) await loadData()
+  else {
+    sessionError.value = true
+    loading.value = false
+  }
 }
 
 function goToProfileSetup() {
@@ -577,6 +563,14 @@ function goToProfileSetup() {
   font-weight: 600;
   line-height: 1.2;
   color: var(--love-color-text);
+}
+
+.profile-guide {
+  max-width: 310rpx;
+  margin-top: 34rpx;
+  color: #c66f6a;
+  font-size: 23rpx;
+  line-height: 1.55;
 }
 
 .creator-tag {
