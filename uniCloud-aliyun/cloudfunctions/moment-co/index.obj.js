@@ -148,8 +148,9 @@ module.exports = {
       const now = Date.now()
       const record = {
         creatorUid: auth.uid,
-        coupleId: null,
-        visibility: params.visibility === 'couple' ? 'couple' : 'private',
+        spaceId: active.space._id,
+        coupleId: active.space.memberCount === 2 ? active.space._id : null,
+        visibility: params.visibility === 'couple' && active.space.memberCount === 2 ? 'couple' : 'private',
         title: title || content.slice(0, 30),
         titleCustomized,
         content,
@@ -165,7 +166,7 @@ module.exports = {
       }
 
       const inserted = await moments.add(record)
-      return success({ _id: inserted.id, ...toClient({ _id: inserted.id, ...record }) })
+      return success(await toClient({ _id: inserted.id, ...record }, auth.uid))
     } catch (error) {
       return normalizeError(error)
     }
@@ -184,9 +185,9 @@ module.exports = {
       const existingResult = await moments.doc(id).get()
       const existing = existingResult.data && existingResult.data[0]
       if (!existing || existing.status !== 'active') throw new AppError(API_CODE.NOT_FOUND, '时刻不存在')
-      if (existing.creatorUid !== auth.uid) throw new AppError(API_CODE.FORBIDDEN, '无权修改该时刻')
+      if (!await canWrite(auth.uid, existing)) throw new AppError(API_CODE.FORBIDDEN, '无权修改该时刻')
 
-      const updateData = { updatedAt: Date.now(), revision: dbCmd.inc(1) }
+      const updateData = { updatedByUid: auth.uid, updatedAt: Date.now(), revision: dbCmd.inc(1) }
 
       if (params.content !== undefined) {
         updateData.content = requireString(params.content, '内容', { maxLength: 2000 })
@@ -207,7 +208,12 @@ module.exports = {
         updateData.mediaIds = Array.isArray(params.mediaIds) ? params.mediaIds.slice(0, 9) : []
       }
       if (params.visibility !== undefined) {
-        updateData.visibility = params.visibility === 'couple' ? 'couple' : 'private'
+        const active = await getActiveSpace(auth.uid)
+        updateData.visibility = params.visibility === 'couple'
+          && active.space._id === existing.spaceId
+          && active.space.memberCount === 2
+          ? 'couple'
+          : 'private'
       }
       if (params.title !== undefined) {
         const title = typeof params.title === 'string' ? params.title.trim().slice(0, 30) : ''
@@ -236,10 +242,11 @@ module.exports = {
       const existingResult = await moments.doc(id).get()
       const existing = existingResult.data && existingResult.data[0]
       if (!existing || existing.status !== 'active') throw new AppError(API_CODE.NOT_FOUND, '时刻不存在')
-      if (existing.creatorUid !== auth.uid) throw new AppError(API_CODE.FORBIDDEN, '无权删除该时刻')
+      if (!await canWrite(auth.uid, existing)) throw new AppError(API_CODE.FORBIDDEN, '无权删除该时刻')
 
       await moments.doc(id).update({
         status: 'deleted',
+        deletedByUid: auth.uid,
         deletedAt: Date.now(),
         updatedAt: Date.now(),
         revision: dbCmd.inc(1)

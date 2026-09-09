@@ -4,6 +4,11 @@ import { createCloudObject } from './cloud'
 
 export interface MomentListItem {
   _id: string
+  spaceId: string
+  creatorUid: string
+  creatorName: string
+  creatorAvatarFileId: string | null
+  isMine: boolean
   title: string
   titleCustomized: boolean
   content: string

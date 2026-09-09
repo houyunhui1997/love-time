@@ -1,86 +1,32 @@
-# 测试库初始化与数据创建顺序
+# 恋时光数据库初始化
 
-当前开发阶段不使用任何演示种子数据。清空数据库后，所有业务记录都由真实用户操作按需创建。
+当前版本不再使用 `love-profiles`。用户登录并完善昵称、头像和性别后，系统会自动创建个人空间；另一半的信息只从对方真实账号读取，不再手工录入。
 
-## 一、重置测试数据
+## 核心集合
 
-在 uniCloud Web 控制台依次清空以下集合的数据（保留集合和 Schema）：
+1. `uni-id-users`：登录账号、昵称、头像和性别。
+2. `love-spaces`：空间名称、4 位空间码、在一起日期、成员数和版本号。
+3. `love-space-members`：用户与空间的成员关系、角色和最近使用时间。
+4. `love-space-invites`：微信邀请凭证及有效期。
+5. `love-space-join-attempts`：空间码尝试记录，用于限制暴力枚举。
+6. `anniversaries`：纪念日，`creatorUid` 永久表示创建者，`visibility` 控制另一半是否可见。
+7. `moments`：时光轴内容，归属和可见性规则同纪念日。
+8. `media-assets`：业务图片资源引用。
 
-1. `moments`
-2. `anniversaries`
-3. `love-profiles`
-4. `uni-id-log`
-5. `uni-id-users`
+请在 uniCloud Web 控制台上传本目录的 schema 与 index 文件。测试库升级时可直接删除旧的 `love-profiles` 集合以及旧测试数据，再部署全部云函数。
 
-如需完全重置头像测试文件，可另外清理云存储中的 `user/avatar/` 与 `partner/avatar/`。这一步不会影响数据库结构。
+## 空间规则
 
-## 二、上传当前数据库结构
+- 每个账号首次登录自动创建一个个人空间和唯一的 4 位数字/大写字母空间码。
+- 一个空间最多两名有效成员；一个账号最多存在一段有效情侣关系。
+- 可通过微信邀请或空间码直接加入，无需创建者二次审批。
+- 情侣可见内容双方都能编辑、删除，但解绑时始终按 `creatorUid` 拆回创建者的个人空间，并转为仅自己可见。
+- 在一起日期允许暂时为空，由任一空间成员后续补充。
 
-在 HBuilderX 的 `uniCloud-aliyun/database` 目录中上传以下 Schema：
+## 建议验证顺序
 
-- `uni-id-users.schema.json`
-- `uni-id-log.schema.json`
-- `love-profiles.schema.json`
-- `anniversaries.schema.json`
-- `moments.schema.json`
-- `media-assets.schema.json`（需要上传图片或视频时使用）
-
-建议在云控制台给 `love-profiles.ownerUid` 建立唯一索引，保证每个账号最多只有一份恋爱档案。
-
-## 三、上传云对象
-
-上传并部署：
-
-- `uni-id-co`
-- `profile-co`
-- `anniversary-co`
-- `moment-co`
-- 公共模块 `love-common`
-
-更新 `profile-co` 后应选择“上传部署”，确保云端不再执行旧版默认数据逻辑。
-
-## 四、正常的数据创建顺序
-
-### 1. 微信登录
-
-`uni-id-co.loginByWeixin` 根据 OpenID 创建 `uni-id-users` 账号。登录弹窗随后调用 `profile-co.saveLoginProfile`，只补充以下账号字段：
-
-- `nickname`
-- `avatar`
-- `gender`
-
-此时 `love-profiles` 必须仍然为空。
-
-### 2. 建立恋爱档案
-
-用户进入“建立恋爱档案”页面，填写：
-
-- 我的称呼
-- 对方称呼
-- 在一起日期
-- 对方头像（选填）
-
-保存后调用 `profile-co.saveLoveProfile`，首次创建 `love-profiles`。`selfGender` 和 `selfAvatarFileId` 从已登录账号读取，不能由前端伪造。
-
-### 3. 创建业务数据
-
-- 用户添加纪念日时创建 `anniversaries`。
-- 用户发布时光记录时创建 `moments`。
-- 不创建任何默认纪念日或默认时光记录。
-
-## 五、初始化验收
-
-按以下顺序检查：
-
-1. 清空后打开小程序，应保持未登录状态。
-2. 完成微信登录后，`uni-id-users` 应有一条账号记录，`love-profiles` 应为零条。
-3. 首页应显示“建立你们的恋爱档案”，不得出现“小鹿”“阿川”“TA”“2025.03.31”或默认相伴天数。
-4. 完成恋爱档案表单后，`love-profiles` 应新增一条记录，首页按填写日期计算相伴天数。
-5. 从“我的 → 恋爱资料”修改后，首页和我的页面应在再次显示时读取最新数据。
-
-## 六、禁止的初始化行为
-
-- 查询接口不得创建数据。
-- 登录接口不得创建恋爱档案。
-- 前端不得使用虚构姓名、虚构日期或固定相伴天数作为登录态兜底。
-- 恋爱档案不存在时应使用明确的未建档状态，不使用假数据填充页面。
+1. 清空测试业务集合，仅保留或重新创建测试账号。
+2. 登录账号 A，确认自动生成个人空间、成员记录和 4 位空间码。
+3. 登录账号 B，通过 A 的空间码或邀请加入，确认双方资料来自各自账号。
+4. 双方分别创建公开纪念日和时光，确认列表显示创建者标签，且双方均可编辑删除。
+5. 解绑后确认内容按创建者回到各自空间，并全部变为仅自己可见。

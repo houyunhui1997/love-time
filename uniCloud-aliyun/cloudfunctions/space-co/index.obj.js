@@ -23,6 +23,7 @@ const spaces = db.collection('love-spaces')
 const members = db.collection('love-space-members')
 const invites = db.collection('love-space-invites')
 const attempts = db.collection('love-space-join-attempts')
+const bindings = db.collection('love-couple-bindings')
 const moments = db.collection('moments')
 const anniversaries = db.collection('anniversaries')
 
@@ -86,6 +87,22 @@ async function assertCanJoin(uid, space) {
   if (await hasActiveCouple(space.ownerUid)) throw new AppError(API_CODE.COUPLE_EXISTS, '对方已经绑定了情侣空间')
 }
 
+async function claimBinding(uid, spaceId, partnerUid, now) {
+  const result = await bindings.where({ uid }).limit(1).get()
+  const existing = result.data[0]
+  if (existing && existing.status === 'active') {
+    throw new AppError(API_CODE.COUPLE_EXISTS, '账号已经绑定了情侣空间')
+  }
+  if (existing) {
+    await bindings.doc(existing._id).update({ spaceId, partnerUid, status: 'active', endedAt: null, updatedAt: now })
+    return { id: existing._id, created: false }
+  }
+  const inserted = await bindings.add({
+    uid, spaceId, partnerUid, status: 'active', endedAt: null, createdAt: now, updatedAt: now
+  })
+  return { id: inserted.id, created: true }
+}
+
 async function joinSpace(uid, space, invite = null) {
   await ensurePersonalSpace(uid)
   await assertCanJoin(uid, space)
@@ -98,7 +115,10 @@ async function joinSpace(uid, space, invite = null) {
   })
   if (!claimed.updated) throw new AppError(API_CODE.COUPLE_EXISTS, '该空间刚刚被加入，请选择其他空间')
 
+  const claimedBindings = []
   try {
+    claimedBindings.push(await claimBinding(space.ownerUid, space._id, uid, now))
+    claimedBindings.push(await claimBinding(uid, space._id, space.ownerUid, now))
     if (existing.data.length) {
       await members.doc(existing.data[0]._id).update({
         role: 'member', status: 'active', joinedAt: now, leftAt: null, lastActiveAt: now, updatedAt: now
@@ -113,8 +133,13 @@ async function joinSpace(uid, space, invite = null) {
       await invites.doc(invite._id).update({ status: 'used', usedByUid: uid, usedAt: now, updatedAt: now })
     }
   } catch (error) {
+    for (const claim of claimedBindings) {
+      if (claim.created) await bindings.doc(claim.id).remove()
+      else await bindings.doc(claim.id).update({ status: 'ended', endedAt: now, updatedAt: now })
+    }
     await spaces.doc(space._id).update({ memberCount: 1, updatedAt: Date.now(), revision: dbCmd.inc(1) })
-    throw error
+    if (error instanceof AppError) throw error
+    throw new AppError(API_CODE.COUPLE_EXISTS, '绑定状态已变化，请刷新后重试')
   }
   return toContext(uid, { membership: { uid, lastActiveAt: now }, space: { ...space, memberCount: 2 } })
 }
@@ -312,6 +337,7 @@ module.exports = {
         revision: dbCmd.inc(1)
       })
       await invites.where({ spaceId: active.space._id, status: 'active' }).update({ status: 'revoked', updatedAt: now })
+      await bindings.where({ spaceId: active.space._id, status: 'active' }).update({ status: 'ended', endedAt: now, updatedAt: now })
       return success(await toContext(auth.uid))
     } catch (error) {
       return normalizeError(error)

@@ -11,6 +11,7 @@
     { "path": "pages/timeline/search", "style": { "navigationStyle": "custom" } },
     { "path": "pages/profile/index", "style": { "navigationStyle": "custom", "backgroundColor": "#FBF4ED" } },
     { "path": "pages/profile/love-profile", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/couple/space", "style": { "navigationStyle": "custom" } },
     { "path": "pages/couple/invite", "style": { "navigationStyle": "custom" } },
     { "path": "pages/settings/reminder", "style": { "navigationStyle": "custom" } },
     { "path": "pages/settings/theme", "style": { "navigationStyle": "custom" } },

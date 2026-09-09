@@ -1,0 +1,12 @@
+{
+  "bsonType": "object",
+  "required": ["uid", "spaceId", "partnerUid", "createdAt"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false },
+  "properties": {
+    "_id": { "description": "系统自动生成" },
+    "uid": { "bsonType": "string" },
+    "spaceId": { "bsonType": "string" },
+    "partnerUid": { "bsonType": "string" },
+    "createdAt": { "bsonType": "timestamp" }
+  }
+}

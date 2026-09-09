@@ -1,0 +1,5 @@
+[
+  { "IndexName": "space_status_occurred", "MgoKeySchema": { "MgoIndexKeys": [{ "Name": "spaceId", "Direction": "1" }, { "Name": "status", "Direction": "1" }, { "Name": "occurredAt", "Direction": "-1" }, { "Name": "_id", "Direction": "-1" }], "MgoIsUnique": false } },
+  { "IndexName": "space_month_occurred", "MgoKeySchema": { "MgoIndexKeys": [{ "Name": "spaceId", "Direction": "1" }, { "Name": "occurredMonth", "Direction": "1" }, { "Name": "occurredAt", "Direction": "-1" }], "MgoIsUnique": false } },
+  { "IndexName": "creator_space", "MgoKeySchema": { "MgoIndexKeys": [{ "Name": "creatorUid", "Direction": "1" }, { "Name": "spaceId", "Direction": "1" }], "MgoIsUnique": false } }
+]

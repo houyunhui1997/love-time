@@ -110,6 +110,14 @@
           @change="onSwitchChange"
         />
       </view>
+      <view class="form-divider" />
+      <view class="form-row">
+        <view class="visibility-copy">
+          <text class="form-label">双方可见</text>
+          <text class="visibility-tip">{{ spaceIsCouple ? '开启后双方都可编辑和删除' : '邀请另一半后可开启' }}</text>
+        </view>
+        <switch :checked="form.visibility === 'couple'" :disabled="!spaceIsCouple" color="#db7470" class="form-switch" @change="onVisibilityChange" />
+      </view>
     </view>
 
     <!-- 底部按钮 -->
@@ -200,6 +208,7 @@ import LoveLoading from '@/components/base/LoveLoading.vue'
 import { formatBusinessDate } from '@/utils/date'
 import type { AnniversaryType, AnniversaryRepeat } from '@/types/domain'
 import { createAnniversary, updateAnniversary, getAnniversary } from '@/services/anniversary'
+import { getSpaceContext } from '@/services/space'
 
 interface FormData {
   title: string
@@ -209,12 +218,14 @@ interface FormData {
   reminderOffsetDays: number[]
   note: string
   pinned: boolean
+  visibility: 'private' | 'couple'
 }
 
 const isEdit = ref(false)
 const editId = ref('')
 const editRevision = ref(1)
 const saving = ref(false)
+const spaceIsCouple = ref(false)
 const showDatePicker = ref(false)
 const showRepeatPicker = ref(false)
 const showReminderPicker = ref(false)
@@ -253,7 +264,8 @@ const form = reactive<FormData>({
   repeatType: 'yearly',
   reminderOffsetDays: [1],
   note: '',
-  pinned: false
+  pinned: false,
+  visibility: 'private'
 })
 
 const eventTypes = [
@@ -308,6 +320,10 @@ function onSwitchChange(e: any) {
   form.pinned = e.detail.value
 }
 
+function onVisibilityChange(e: any) {
+  form.visibility = e.detail.value && spaceIsCouple.value ? 'couple' : 'private'
+}
+
 function onDateChange(e: any) {
   const [yIndex, mIndex, dIndex] = e.detail.value as number[]
   const year = dateYears[yIndex] || currentYear
@@ -340,6 +356,13 @@ function selectReminder(value: number) {
 }
 
 onLoad(async (options) => {
+  try {
+    const context = await getSpaceContext()
+    spaceIsCouple.value = context.activeSpace.isCouple
+    if (!options?.id && spaceIsCouple.value) form.visibility = 'couple'
+  } catch {
+    spaceIsCouple.value = false
+  }
   if (options?.id) {
     isEdit.value = true
     editId.value = options.id
@@ -353,6 +376,7 @@ onLoad(async (options) => {
       form.reminderOffsetDays = data.reminderOffsetDays.length > 0 ? data.reminderOffsetDays : [0]
       form.note = data.note
       form.pinned = data.pinned
+      form.visibility = data.visibility
     } catch (error) {
       const message = error instanceof Error ? error.message : '纪念日加载失败'
       uni.showToast({ title: message, icon: 'none' })
@@ -396,7 +420,7 @@ async function onSave() {
       reminderOffsetDays: form.reminderOffsetDays,
       note: form.note.trim(),
       pinned: form.pinned,
-      visibility: 'private' as const
+      visibility: form.visibility
     }
 
     if (isEdit.value) {
@@ -528,6 +552,9 @@ async function onSave() {
 .form-row-top {
   align-items: center;
 }
+
+.visibility-copy { display: flex; flex-direction: column; gap: 6rpx; }
+.visibility-tip { color: #aa998e; font-size: 18rpx; }
 
 .form-label {
   flex: 0 0 218rpx;

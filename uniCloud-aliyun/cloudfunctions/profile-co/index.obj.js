@@ -33,6 +33,7 @@ function toClientAccount(user) {
 }
 
 function validateDate(value) {
+  if (value === null || value === '') return null
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     throw new AppError(API_CODE.INVALID_PARAMS, '在一起日期格式不正确')
   }
@@ -133,7 +134,7 @@ module.exports = {
       const auth = await requireAuth(this)
       const active = await getActiveSpace(auth.uid)
       const spaceName = requireString(params.spaceName || active.space.name, '空间名称', { maxLength: 20 })
-      const loveStartDate = validateDate(params.loveStartDate)
+      const loveStartDate = validateDate(params.loveStartDate ?? null)
       const revision = Number(params.revision || active.space.revision)
       const updated = await spaces.where({ _id: active.space._id, revision }).update({
         name: spaceName,

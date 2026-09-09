@@ -45,6 +45,7 @@
             <image class="type-icon" :src="item.iconSrc" mode="aspectFit" />
             <view class="row-copy">
               <text class="row-title">{{ item.title }}</text>
+              <text v-if="item.visibility === 'couple'" class="creator-tag">{{ item.isMine ? '由我创建' : `由${item.creatorName}创建` }}</text>
               <text class="row-countdown" :class="{ elapsed: item.daysDiff < 0 }">
                 {{ item.countdownText }}
               </text>
@@ -419,6 +420,8 @@ function goToAdd() {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.creator-tag { align-self: flex-start; margin-top: 6rpx; padding: 3rpx 9rpx; border-radius: 10rpx; background: #f8e3dd; color: #c56f6a; font-size: 17rpx; line-height: 1.2; }
 
 .row-countdown {
   color: #db7470;

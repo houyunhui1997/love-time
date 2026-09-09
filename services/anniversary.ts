@@ -4,6 +4,11 @@ import { createCloudObject } from './cloud'
 
 export interface AnniversaryListItem {
   _id: string
+  spaceId: string
+  creatorUid: string
+  creatorName: string
+  creatorAvatarFileId: string | null
+  isMine: boolean
   title: string
   eventType: AnniversaryType
   targetDate: string

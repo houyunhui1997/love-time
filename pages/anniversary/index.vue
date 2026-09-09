@@ -26,7 +26,7 @@
       </button>
     </view>
 
-    <template v-else-if="profile">
+    <template v-else-if="profile?.loveStartDate">
       <!-- 主视觉区 -->
       <view class="hero-section">
         <view class="together-block">
@@ -68,6 +68,7 @@
           <image class="type-icon" :src="item.iconSrc" mode="aspectFit" />
           <view class="item-info">
             <text class="item-title">{{ item.title }}</text>
+            <text v-if="item.visibility === 'couple'" class="creator-tag">{{ item.isMine ? '由我创建' : `由${item.creatorName}创建` }}</text>
             <view class="item-countdown">
               <text class="countdown-label">还有</text>
               <text class="countdown-days">{{ item.daysLeft }}</text>
@@ -117,7 +118,7 @@
         mode="aspectFit"
       />
       <text class="profile-setup-title">建立你们的恋爱档案</text>
-      <text class="profile-setup-copy">填写双方称呼和在一起日期后，首页才会开始记录相伴时光</text>
+      <text class="profile-setup-copy">设置空间名称和在一起日期后，首页才会开始记录相伴时光</text>
       <button class="profile-setup-button" @tap="goToProfileSetup">去填写资料</button>
     </view>
 
@@ -172,6 +173,9 @@ interface AnniversaryItem {
   daysLeft: number
   iconSrc: string
   eventType: string
+  creatorName: string
+  isMine: boolean
+  visibility: 'private' | 'couple'
 }
 
 const profile = ref<LoveProfile | null>(null)
@@ -210,7 +214,10 @@ function mapItem(item: AnniversaryListItem): AnniversaryItem {
     targetDate: nextDate.replace(/-/g, '.'),
     daysLeft,
     iconSrc: iconMap[item.eventType] || iconMap.anniversary,
-    eventType: item.eventType
+    eventType: item.eventType,
+    creatorName: item.creatorName,
+    isMine: item.isMine,
+    visibility: item.visibility
   }
 }
 
@@ -278,7 +285,7 @@ function goToLogin() {
 async function onLoginSuccess(_account: AccountProfile) {
   isLoggedIn.value = true
   await loadData()
-  if (!profile.value) goToProfileSetup()
+  if (!profile.value?.loveStartDate) goToProfileSetup()
 }
 
 function goToProfileSetup() {
@@ -570,6 +577,17 @@ function goToProfileSetup() {
   font-weight: 600;
   line-height: 1.2;
   color: var(--love-color-text);
+}
+
+.creator-tag {
+  align-self: flex-start;
+  margin-top: 4rpx;
+  padding: 3rpx 9rpx;
+  border-radius: 10rpx;
+  background: #f8e3dd;
+  color: #c56f6a;
+  font-size: 17rpx;
+  line-height: 1.2;
 }
 
 .item-countdown {

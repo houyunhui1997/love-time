@@ -95,13 +95,12 @@ function onDateChange(event: any) {
 async function saveProfile() {
   const spaceName = form.spaceName.trim()
   if (!spaceName) return uni.showToast({ title: '请输入空间名称', icon: 'none' })
-  if (!form.loveStartDate) return uni.showToast({ title: '请选择在一起日期', icon: 'none' })
   if (saving.value) return
   saving.value = true
   try {
     const result = await saveMyLoveProfile({
       spaceName,
-      loveStartDate: form.loveStartDate,
+      loveStartDate: form.loveStartDate || '',
       revision: revision.value
     })
     revision.value = result.revision

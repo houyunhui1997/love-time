@@ -190,8 +190,9 @@ async function getSpaceMembers(spaceId) {
 }
 
 async function hasActiveCouple(uid) {
-  const memberships = await listActiveMemberships(uid)
-  return memberships.some(item => Number(item.space.memberCount || 1) >= 2)
+  const db = uniCloud.database()
+  const result = await db.collection('love-couple-bindings').where({ uid, status: 'active' }).limit(1).get()
+  return !!result.data.length
 }
 
 async function canAccessSpace(uid, spaceId) {

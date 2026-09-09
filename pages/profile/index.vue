@@ -5,25 +5,29 @@
       <text class="eyebrow">LOVE TIME</text>
     </view>
 
-    <view v-if="isLoggedIn" class="identity-card">
-      <image v-if="accountAvatar" class="account-avatar" :src="accountAvatar" mode="aspectFill" />
-      <view v-else class="account-avatar avatar-fallback">
-        <uni-icons type="person-filled" size="30" color="#d77873" />
+    <view v-if="isLoggedIn" class="identity-card dual-members">
+      <view class="member-slot">
+        <image v-if="accountAvatar" class="account-avatar" :src="accountAvatar" mode="aspectFill" />
+        <view v-else class="account-avatar avatar-fallback"><uni-icons type="person-filled" size="28" color="#d77873" /></view>
+        <text class="member-name">{{ accountName }}</text>
       </view>
-      <view class="identity-copy">
-        <text class="identity-name">{{ accountName }}</text>
-        <text class="identity-status">已登录 · 恋时光账号</text>
+      <view class="member-heart"><uni-icons type="heart-filled" size="18" color="#d87974" /></view>
+      <view v-if="profile?.isCouple" class="member-slot">
+        <image v-if="profile.partnerAvatarFileId" class="account-avatar" :src="profile.partnerAvatarFileId" mode="aspectFill" />
+        <view v-else class="account-avatar avatar-fallback"><uni-icons type="person-filled" size="28" color="#d77873" /></view>
+        <text class="member-name">{{ profile.partnerName }}</text>
       </view>
-      <view class="identity-badge">
-        <uni-icons type="heart-filled" size="16" color="#d87974" />
+      <view v-else class="member-slot invite-slot" @tap="openInvite">
+        <view class="invite-image"><uni-icons type="plusempty" size="28" color="#d77873" /></view>
+        <text class="member-name invite-name">去邀请</text>
       </view>
     </view>
 
     <view v-if="isLoggedIn && profile" class="archive-card" @tap="openLoveProfile">
       <image class="archive-art" src="/static/profile/love-archive-clean.jpg" mode="aspectFill" />
-      <text class="archive-heading">我们的恋爱档案</text>
+      <text class="archive-heading">{{ profile.spaceName }}</text>
       <text class="self-name">{{ profile.selfName }}</text>
-      <text class="partner-name">{{ profile.partnerName }}</text>
+      <text class="partner-name">{{ profile.partnerName || '等待加入' }}</text>
       <view class="days-copy">
         <text class="together-label">在一起</text>
         <view class="days-line">
@@ -34,13 +38,7 @@
       </view>
     </view>
 
-    <view v-else-if="isLoggedIn" class="profile-incomplete-card">
-      <text class="profile-incomplete-title">恋爱档案尚未建立</text>
-      <text class="profile-incomplete-copy">填写双方称呼和在一起日期，开启属于你们的恋爱档案。</text>
-      <button class="profile-incomplete-button" @tap="openLoveProfile">去填写资料</button>
-    </view>
-
-    <view v-else class="guest-panel">
+    <view v-else-if="!isLoggedIn" class="guest-panel">
       <view class="guest-avatar">
         <uni-icons type="person-filled" size="34" color="#d77873" />
       </view>
@@ -121,7 +119,8 @@ interface MenuItem {
 
 const menuGroups: MenuItem[][] = [
   [
-    { label: '恋爱资料', icon: 'contact', caption: '称呼与恋爱日期' },
+    { label: '情侣空间', icon: 'heart', caption: '成员、邀请与切换' },
+    { label: '恋爱资料', icon: 'contact', caption: '空间名称与恋爱日期' },
     { label: '提醒设置', icon: 'notification', caption: '重要日子不遗漏' },
     { label: '主题外观', icon: 'color', caption: '装点恋时光' }
   ],
@@ -134,6 +133,7 @@ const menuGroups: MenuItem[][] = [
 ]
 
 const routeByMenu: Record<string, string> = {
+  情侣空间: '/pages/couple/space',
   提醒设置: '/pages/settings/reminder',
   主题外观: '/pages/settings/theme',
   数据备份与恢复: '/pages/settings/backup',
@@ -145,8 +145,8 @@ const routeByMenu: Record<string, string> = {
 const today = formatBusinessDate(new Date())
 const accountName = computed(() => account.value?.nickname || profile.value?.selfName || '恋时光用户')
 const accountAvatar = computed(() => account.value?.avatarFileId || profile.value?.selfAvatarFileId || '')
-const togetherDays = computed(() => profile.value ? Math.max(0, differenceInCalendarDays(today, profile.value.loveStartDate)) : 0)
-const displayStartDate = computed(() => profile.value?.loveStartDate.replace(/-/g, '.') || '')
+const togetherDays = computed(() => profile.value?.loveStartDate ? Math.max(0, differenceInCalendarDays(today, profile.value.loveStartDate)) : 0)
+const displayStartDate = computed(() => profile.value?.loveStartDate.replace(/-/g, '.') || '待设置')
 
 onShow(loadProfilePage)
 
@@ -189,11 +189,15 @@ function openLoginPanel() {
 function onLoginSuccess(accountResult: AccountProfile) {
   account.value = accountResult
   isLoggedIn.value = true
-  openLoveProfile()
+  void loadProfilePage()
 }
 
 function openLoveProfile() {
-  uni.navigateTo({ url: profile.value ? '/pages/profile/love-profile' : '/pages/onboarding/profile' })
+  uni.navigateTo({ url: profile.value?.loveStartDate ? '/pages/profile/love-profile' : '/pages/onboarding/profile' })
+}
+
+function openInvite() {
+  uni.navigateTo({ url: '/pages/couple/invite' })
 }
 
 function openMenu(label: string) {
@@ -242,6 +246,14 @@ function openMenu(label: string) {
   background: rgba(252, 247, 241, 0.9);
   box-shadow: 0 12rpx 30rpx rgba(104, 72, 54, 0.08), inset 0 1rpx 0 rgba(255, 255, 255, 0.86);
 }
+
+.dual-members { justify-content: center; gap: 34rpx; }
+.member-slot { display: flex; width: 150rpx; flex-direction: column; align-items: center; gap: 9rpx; }
+.member-heart { display: flex; width: 48rpx; height: 48rpx; align-items: center; justify-content: center; border-radius: 50%; background: #fae9e2; }
+.member-name { max-width: 150rpx; overflow: hidden; color: #59463c; font-size: 22rpx; text-overflow: ellipsis; white-space: nowrap; }
+.invite-slot { cursor: pointer; }
+.invite-image { display: flex; width: 86rpx; height: 86rpx; align-items: center; justify-content: center; border: 2rpx dashed rgba(215, 120, 115, .48); border-radius: 50%; background: #fff9f4; }
+.invite-name { color: #d77873; }
 
 .account-avatar,
 .avatar-fallback {

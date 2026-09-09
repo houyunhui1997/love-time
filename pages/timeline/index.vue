@@ -65,9 +65,12 @@
             </view>
 
             <view class="card-meta">
-              <view class="mood-info">
-                <uni-icons type="heart-filled" size="14" :color="moodColor(item.mood)" />
-                <text>{{ moodLabel(item.mood) }}</text>
+              <view class="meta-left">
+                <text v-if="item.visibility === 'couple'" class="creator-tag">{{ item.isMine ? '由我创建' : `由${item.creatorName}创建` }}</text>
+                <view class="mood-info">
+                  <uni-icons type="heart-filled" size="14" :color="moodColor(item.mood)" />
+                  <text>{{ moodLabel(item.mood) }}</text>
+                </view>
               </view>
               <text class="meta-time">{{ item.time }}</text>
             </view>
@@ -155,6 +158,9 @@ interface TimelineItem {
   time: string
   images: string[]
   isToday: boolean
+  creatorName: string
+  isMine: boolean
+  visibility: 'private' | 'couple'
 }
 
 const systemInfo = uni.getSystemInfoSync()
@@ -231,7 +237,10 @@ function mapItem(item: MomentListItem): TimelineItem {
     mood: item.mood,
     time: formatTime(item.occurredAt),
     images: [],
-    isToday: isToday(item.occurredAt)
+    isToday: isToday(item.occurredAt),
+    creatorName: item.creatorName,
+    isMine: item.isMine,
+    visibility: item.visibility
   }
 }
 
@@ -583,6 +592,9 @@ onShow(() => {
   padding-top: 15rpx;
   border-top: 1rpx solid rgba(218, 200, 188, 0.42);
 }
+
+.meta-left { display: flex; align-items: center; gap: 10rpx; }
+.creator-tag { padding: 4rpx 10rpx; border-radius: 12rpx; background: #f8e3dd; color: #c56f6a; font-size: 18rpx; line-height: 1.2; }
 
 .mood-info {
   display: flex;

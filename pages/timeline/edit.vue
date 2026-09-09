@@ -84,12 +84,13 @@
               <uni-icons class="setting-icon" type="locked" size="20" color="#df7772" />
               <view class="visibility-copy">
                 <text class="visibility-title">仅自己可见</text>
-                <text class="visibility-tip">关闭后，另一半也能看到</text>
+                <text class="visibility-tip">{{ spaceIsCouple ? '关闭后，另一半也能看到' : '邀请另一半后可设置公开' }}</text>
               </view>
             </view>
             <switch
               class="visibility-switch"
               :checked="form.visibility === 'private'"
+              :disabled="!spaceIsCouple"
               color="#df716e"
               @change="onVisibilityChange"
             />
@@ -163,6 +164,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import MomentMoodPicker from '@/components/timeline/MomentMoodPicker.vue'
 import { MOMENT_MOOD_GROUPS } from '@/constants/moment-moods'
+import { getSpaceContext } from '@/services/space'
 import type { MomentMood, Visibility } from '@/types/domain'
 import { createMoment, getMoment, updateMoment } from '@/services/moment'
 import { getTempFileUrls } from '@/services/media'
@@ -215,6 +217,7 @@ const form = reactive<FormData>({
 })
 
 const imageSource = ref<Array<{ type: 'file' | 'local'; value: string }>>([])
+const spaceIsCouple = ref(false)
 const quickMoodValues: MomentMood[] = ['happy', 'warm', 'calm', 'moved']
 const allMoodOptions = MOMENT_MOOD_GROUPS.flatMap(group => group.options)
 const quickMoods = quickMoodValues.map(value => allMoodOptions.find(option => option.value === value)!)
@@ -313,6 +316,14 @@ onLoad(async (options) => {
   const current = new Date()
   form.occurredAt = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`
   form.occurredTime = `${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`
+
+  try {
+    const context = await getSpaceContext()
+    spaceIsCouple.value = context.activeSpace.isCouple
+    if (!options?.id && context.activeSpace.isCouple) form.visibility = 'couple'
+  } catch {
+    spaceIsCouple.value = false
+  }
 
   if (!options?.id) return
   isEdit.value = true
