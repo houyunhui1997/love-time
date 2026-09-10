@@ -131,9 +131,9 @@ const filters: Array<{ label: string; value: FilterValue }> = [
 ]
 
 const iconMap: Record<Exclude<FilterValue, 'all'>, string> = {
-  countdown: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/countdown-day.png',
-  anniversary: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/anniversary-heart.png',
-  birthday: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/birthday-cake.png'
+  countdown: '/static/anniversary/countdown-day-paper.png',
+  anniversary: '/static/anniversary/anniversary-heart-paper.png',
+  birthday: '/static/anniversary/birthday-cake-paper.png'
 }
 
 const activeFilter = ref<FilterValue>('all')
@@ -179,7 +179,7 @@ function toDisplayItem(item: AnniversaryListItem): DisplayItem {
     occurrenceDate,
     displayDate: occurrenceDate.replace(/-/g, '.'),
     daysDiff,
-    countdownText: daysDiff >= 0 ? `还有${daysDiff}天` : `已过${Math.abs(daysDiff)}天`,
+    countdownText: daysDiff > 0 ? `还有${daysDiff}天` : daysDiff === 0 ? '今天到啦' : `已过${Math.abs(daysDiff)}天`,
     iconSrc: iconMap[item.eventType] || iconMap.anniversary
   }
 }

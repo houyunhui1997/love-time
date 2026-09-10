@@ -43,7 +43,9 @@
       <view class="form-row" @tap="openDatePicker">
         <text class="form-label">纪念日期</text>
         <view class="form-value-row">
-          <text class="form-value">{{ displayDate }}</text>
+          <text class="form-value" :class="{ placeholder: !form.targetDate }">
+            {{ displayDate || '请选择' }}
+          </text>
           <view class="arrow-right" />
         </view>
       </view>
@@ -247,8 +249,8 @@ const pageStyle = {
 }
 
 const form = reactive<FormData>({
-  title: '相恋纪念日',
-  targetDate: formatBusinessDate(new Date()),
+  title: '',
+  targetDate: '',
   eventType: 'countdown',
   repeatType: 'yearly',
   reminderOffsetDays: [1],
@@ -274,7 +276,7 @@ const reminderOptions = [
   { label: '提前 7 天', value: 7 }
 ]
 
-const displayDate = computed(() => form.targetDate.replace(/-/g, '.'))
+const displayDate = computed(() => form.targetDate ? form.targetDate.replace(/-/g, '.') : '')
 
 const repeatLabel = computed(() => {
   return repeatOptions.find(r => r.value === form.repeatType)?.label || '每年'
@@ -295,7 +297,8 @@ const dateDays = computed(() => {
 })
 
 function openDatePicker() {
-  const [year, month, day] = form.targetDate.split('-').map(Number)
+  const sourceDate = form.targetDate || formatBusinessDate(new Date())
+  const [year, month, day] = sourceDate.split('-').map(Number)
   datePickerSelection.value = [
     Math.max(0, dateYears.indexOf(year)),
     Math.max(0, month - 1),
@@ -562,6 +565,10 @@ async function onSave() {
 .form-value {
   font-size: 28rpx;
   color: #625249;
+}
+
+.form-value.placeholder {
+  color: #b8aea8;
 }
 
 .arrow-right {

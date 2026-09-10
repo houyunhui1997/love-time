@@ -22,10 +22,15 @@
           <image class="title-type-icon" :src="typeIconSrc" mode="aspectFit" />
           <text class="hero-title">{{ anniversary?.title || '' }}</text>
         </view>
-        <text class="hero-subtitle">距离下一次纪念日</text>
+        <text class="hero-subtitle">{{ daysLeft === 0 ? '期待的日子' : '距离下一次纪念日' }}</text>
         <view class="days-row">
-          <text class="days-number">{{ daysLeft }}</text>
-          <text class="days-unit">天</text>
+          <template v-if="daysLeft === 0">
+            <text class="days-number today-label">就是今天</text>
+          </template>
+          <template v-else>
+            <text class="days-number">{{ daysLeft }}</text>
+            <text class="days-unit">天</text>
+          </template>
         </view>
         <text class="target-date">目标日 {{ displayTargetDate }} {{ weekday }}</text>
       </view>
@@ -120,9 +125,9 @@ const today = formatBusinessDate(new Date())
 
 const typeIconSrc = computed(() => {
   const iconMap = {
-    birthday: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/birthday-cake.png',
-    countdown: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/countdown-day.png',
-    anniversary: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/anniversary-heart.png'
+    birthday: '/static/anniversary/birthday-cake-paper.png',
+    countdown: '/static/anniversary/countdown-day-paper.png',
+    anniversary: '/static/anniversary/anniversary-heart-paper.png'
   } as const
 
   return iconMap[anniversary.value?.eventType || 'anniversary'] || iconMap.anniversary
@@ -348,6 +353,13 @@ async function onDelete() {
   line-height: 0.9;
 }
 
+.days-number.today-label {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 72rpx;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
 .days-unit {
   color: #59483d;
   font-size: 32rpx;
@@ -522,6 +534,10 @@ async function onDelete() {
     font-size: 124rpx;
   }
 
+  .days-number.today-label {
+    font-size: 66rpx;
+  }
+
   .target-date {
     margin-top: 22rpx;
     font-size: 25rpx;
@@ -565,6 +581,10 @@ async function onDelete() {
 
   .days-number {
     font-size: 108rpx;
+  }
+
+  .days-number.today-label {
+    font-size: 60rpx;
   }
 
   .target-date {

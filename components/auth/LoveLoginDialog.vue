@@ -254,7 +254,7 @@ async function confirmProfile() {
 .sheet-handle {
   width: 58rpx;
   height: 6rpx;
-  margin: 0 auto 10rpx;
+  margin: 0 auto 16rpx;
   border-radius: 4rpx;
   background: #ddd0c4;
 }
@@ -279,7 +279,7 @@ async function confirmProfile() {
 }
 
 .dialog-subtitle {
-  margin-top: 4rpx;
+  margin-top: 8rpx;
   color: #9a8376;
   font-size: 22rpx;
   line-height: 1.4;
@@ -325,17 +325,13 @@ async function confirmProfile() {
 }
 
 .profile-fields {
-  margin-top: 20rpx;
-  overflow: hidden;
-  border: 1rpx solid rgba(218, 197, 183, 0.76);
-  border-radius: 18rpx;
-  background: rgba(255, 253, 250, 0.84);
+  margin-top: 30rpx;
 }
 
 .profile-field {
   display: flex;
   box-sizing: border-box;
-  height: 72rpx;
+  height: 92rpx;
   align-items: center;
   justify-content: space-between;
   padding: 0 22rpx;
@@ -343,7 +339,7 @@ async function confirmProfile() {
 
 .avatar-field {
   width: 100%;
-  height: 116rpx;
+  height: 134rpx;
   margin: 0;
   border: 0;
   border-radius: 0;
@@ -358,8 +354,8 @@ async function confirmProfile() {
 
 .avatar-frame {
   position: relative;
-  width: 88rpx;
-  height: 88rpx;
+  width: 92rpx;
+  height: 92rpx;
   overflow: visible;
   border: 3rpx solid rgba(255, 255, 255, 0.94);
   border-radius: 50%;
@@ -367,17 +363,9 @@ async function confirmProfile() {
   box-shadow: 0 0 0 2rpx rgba(226, 184, 174, 0.58);
 }
 
-.profile-fields > .profile-field {
-  border-top: 1rpx solid rgba(224, 207, 196, 0.68);
-}
-
-.profile-fields > .avatar-field {
-  border-top: 0;
-}
-
+.profile-fields > .profile-field:not(:last-child),
 .profile-fields > picker {
-  display: block;
-  border-top: 1rpx solid rgba(224, 207, 196, 0.68);
+  border-bottom: 1rpx solid rgba(224, 207, 196, 0.48);
 }
 
 .field-label,
@@ -401,7 +389,7 @@ async function confirmProfile() {
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  margin: 18rpx 0 0;
+  margin: 30rpx 0 0;
   padding: 0;
   border: 0;
   border-radius: 42rpx;
@@ -428,7 +416,7 @@ async function confirmProfile() {
 
 .agreement {
   display: block;
-  margin-top: 18rpx;
+  margin-top: 20rpx;
   color: #aa998f;
   font-size: 20rpx;
   line-height: 1.45;
@@ -445,19 +433,19 @@ async function confirmProfile() {
     font-size: 32rpx;
   }
 
-  .profile-fields { margin-top: 14rpx; }
-  .avatar-field { height: 98rpx; }
-  .avatar-frame { width: 74rpx; height: 74rpx; }
-  .profile-field { height: 66rpx; }
+  .profile-fields { margin-top: 22rpx; }
+  .avatar-field { height: 118rpx; }
+  .avatar-frame { width: 80rpx; height: 80rpx; }
+  .profile-field { height: 82rpx; }
 
   .login-button {
-    height: 76rpx;
-    margin-top: 14rpx;
-    line-height: 76rpx;
+    height: 78rpx;
+    margin-top: 24rpx;
+    line-height: 78rpx;
   }
 
   .agreement {
-    margin-top: 14rpx;
+    margin-top: 16rpx;
   }
 }
 </style>
