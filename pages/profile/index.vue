@@ -19,11 +19,11 @@
       </view>
     </view>
 
-    <view v-if="isLoggedIn && profile" class="archive-card" @tap="openLoveProfile">
+    <view v-if="isLoggedIn && profile" class="archive-card" @tap="openProfileDialog">
       <image class="archive-art" src="/static/profile/love-archive-clean.jpg" mode="aspectFill" />
       <text class="archive-heading">我们的恋爱档案</text>
-      <text class="self-name">{{ profile.selfName }}</text>
-      <text class="partner-name">{{ profile.partnerName }}</text>
+      <text class="self-name">{{ accountName }}</text>
+      <text v-if="profile.partnerName" class="partner-name">{{ profile.partnerName }}</text>
       <view class="days-copy">
         <text class="together-label">在一起</text>
         <view class="days-line">
@@ -36,8 +36,8 @@
 
     <view v-else-if="isLoggedIn" class="profile-incomplete-card">
       <text class="profile-incomplete-title">恋爱资料可以以后再填</text>
-      <text class="profile-incomplete-copy">称呼和在一起日期只用于个性化展示，不影响记录纪念日和时光。</text>
-      <button class="profile-incomplete-button" @tap="openLoveProfile">完善恋爱资料</button>
+      <text class="profile-incomplete-copy">补充头像、昵称、性别和在一起日期；对方称呼选填，不完善也不影响记录。</text>
+      <button class="profile-incomplete-button" @tap="openProfileDialog">完善恋爱资料</button>
     </view>
 
     <view v-else class="guest-home">
@@ -72,22 +72,26 @@
       </view>
     </template>
 
+    <LoveLoginDialog v-model="showProfileDialog" @success="onProfileSaved" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
 import { differenceInCalendarDays, formatBusinessDate } from '@/utils/date'
 import { restoreWeixinSession } from '@/services/auth'
 import {
   getMyAccountProfile,
   getMyLoveProfile,
   type AccountProfile,
+  type CompleteProfileResult,
   type LoveProfile
 } from '@/services/profile'
 
 const isLoggedIn = ref(false)
+const showProfileDialog = ref(false)
 const account = ref<AccountProfile | null>(null)
 const profile = ref<LoveProfile | null>(null)
 
@@ -122,7 +126,7 @@ interface MenuItem {
 
 const menuGroups: MenuItem[][] = [
   [
-    { label: '恋爱资料', icon: 'contact', caption: '称呼与恋爱日期' },
+    { label: '恋爱资料', icon: 'contact', caption: '个人资料与恋爱日期' },
     { label: '提醒设置', icon: 'notification', caption: '重要日子不遗漏' }
   ],
   [
@@ -138,8 +142,8 @@ const routeByMenu: Record<string, string> = {
 }
 
 const today = formatBusinessDate(new Date())
-const accountName = computed(() => account.value?.nickname || profile.value?.selfName || '恋时光用户')
-const accountAvatar = computed(() => account.value?.avatarFileId || profile.value?.selfAvatarFileId || '')
+const accountName = computed(() => account.value?.nickname || '恋时光用户')
+const accountAvatar = computed(() => account.value?.avatarFileId || '')
 const togetherDays = computed(() => profile.value ? Math.max(0, differenceInCalendarDays(today, profile.value.loveStartDate)) : 0)
 const displayStartDate = computed(() => profile.value?.loveStartDate.replace(/-/g, '.') || '')
 
@@ -166,13 +170,18 @@ async function loadProfilePage() {
   }
 }
 
-function openLoveProfile() {
-  uni.navigateTo({ url: profile.value ? '/pages/profile/love-profile' : '/pages/onboarding/profile' })
+function openProfileDialog() {
+  showProfileDialog.value = true
+}
+
+function onProfileSaved(result: CompleteProfileResult) {
+  account.value = result.account
+  profile.value = result.profile
 }
 
 function openMenu(label: string) {
   if (label === '恋爱资料') {
-    openLoveProfile()
+    openProfileDialog()
     return
   }
 

@@ -116,6 +116,7 @@
       </view>
     </template>
 
+    <LoveLoginDialog v-model="showProfileDialog" @success="onProfileSaved" />
     <LoveLoading :visible="loading" fullscreen text="正在加载纪念日" />
   </view>
 </template>
@@ -123,9 +124,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import { differenceInCalendarDays, formatBusinessDate, getNextYearlyOccurrence } from '@/utils/date'
-import { getMyLoveProfile, type LoveProfile } from '@/services/profile'
+import { getMyLoveProfile, type CompleteProfileResult, type LoveProfile } from '@/services/profile'
 import { restoreWeixinSession } from '@/services/auth'
 import { listAnniversaries, type AnniversaryListItem } from '@/services/anniversary'
 
@@ -184,6 +186,7 @@ const recentAnniversaries = ref<AnniversaryItem[]>([])
 const loading = ref(false)
 const empty = ref(false)
 const sessionError = ref(false)
+const showProfileDialog = ref(false)
 
 function mapItem(item: AnniversaryListItem): AnniversaryItem {
   const isYearly = item.repeatType === 'yearly'
@@ -270,7 +273,11 @@ async function retrySession() {
 }
 
 function goToProfileSetup() {
-  uni.navigateTo({ url: '/pages/onboarding/profile' })
+  showProfileDialog.value = true
+}
+
+function onProfileSaved(result: CompleteProfileResult) {
+  profile.value = result.profile
 }
 </script>
 

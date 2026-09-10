@@ -3,11 +3,7 @@ export type RecordStatus = 'active' | 'deleted'
 export interface LoveProfile {
   _id: string
   ownerUid: string
-  selfName: string
   partnerName: string
-  selfGender: 'male' | 'female' | null
-  selfAvatarFileId: string | null
-  partnerAvatarFileId: string | null
   loveStartDate: string
   theme: 'warm-paper' | 'clean'
   createdAt: number

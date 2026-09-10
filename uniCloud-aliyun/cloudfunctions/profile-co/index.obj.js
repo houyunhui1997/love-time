@@ -1,7 +1,7 @@
 'use strict'
 
 const uniIdCommon = require('uni-id-common')
-const { success, normalizeError, AppError, API_CODE, requireString } = require('love-common')
+const { success, normalizeError, AppError, API_CODE } = require('love-common')
 const db = uniCloud.database()
 const dbCmd = db.command
 const profiles = db.collection('love-profiles')
@@ -31,12 +31,8 @@ function toClientProfile(profile) {
   if (!profile) return null
   return {
     _id: profile._id,
-    selfName: profile.selfName,
-    partnerName: profile.partnerName,
+    partnerName: profile.partnerName || '',
     loveStartDate: profile.loveStartDate,
-    selfGender: profile.selfGender || null,
-    selfAvatarFileId: profile.selfAvatarFileId || null,
-    partnerAvatarFileId: profile.partnerAvatarFileId || null,
     revision: profile.revision || 1
   }
 }
@@ -83,63 +79,67 @@ module.exports = {
     }
   },
 
-  async saveLoginProfile(params = {}) {
+  async saveCompleteProfile(params = {}) {
     try {
       const auth = await requireAuth(this)
       const gender = params.gender
       const nickname = typeof params.nickname === 'string' ? params.nickname.trim() : ''
       const avatarFileId = typeof params.avatarFileId === 'string' && params.avatarFileId ? params.avatarFileId : null
+      const partnerName = typeof params.partnerName === 'string' ? params.partnerName.trim() : ''
+      const loveStartDate = validateDate(params.loveStartDate)
       if (!['male', 'female'].includes(gender)) throw new AppError(API_CODE.INVALID_PARAMS, '请选择性别')
       if (!nickname || nickname.length > 20) throw new AppError(API_CODE.INVALID_PARAMS, '请输入1至20个字符的昵称')
-      const userUpdate = { nickname, gender: gender === 'male' ? 1 : 2 }
-      if (avatarFileId) userUpdate.avatar = avatarFileId
-      await users.doc(auth.uid).update(userUpdate)
-      return success({ nickname, gender, avatarFileId })
-    } catch (error) {
-      return normalizeError(error)
-    }
-  },
-
-  async saveLoveProfile(params = {}) {
-    try {
-      const auth = await requireAuth(this)
-      const selfName = requireString(params.selfName, '我的称呼', { maxLength: 12 })
-      const partnerName = requireString(params.partnerName, '对方称呼', { maxLength: 12 })
-      const loveStartDate = validateDate(params.loveStartDate)
-      const partnerAvatarFileId = typeof params.partnerAvatarFileId === 'string' && params.partnerAvatarFileId
-        ? params.partnerAvatarFileId
-        : null
+      if (partnerName.length > 12) throw new AppError(API_CODE.INVALID_PARAMS, '对方称呼不能超过12个字符')
 
       const userResult = await users.doc(auth.uid).get()
       const user = userResult.data && userResult.data[0]
       if (!user) throw new AppError(API_CODE.NOT_FOUND, '账号不存在')
+      const savedAvatarFileId = avatarFileId || user.avatar || null
+      if (!savedAvatarFileId) throw new AppError(API_CODE.INVALID_PARAMS, '请选择头像')
+      const userUpdate = { nickname, gender: gender === 'male' ? 1 : 2 }
+      userUpdate.avatar = savedAvatarFileId
+      await users.doc(auth.uid).update(userUpdate)
+
       const now = Date.now()
       const existingResult = await profiles.where({ ownerUid: auth.uid }).limit(1).get()
       const existing = existingResult.data[0]
       const profileData = {
-        selfName,
         partnerName,
         loveStartDate,
-        selfGender: normalizeGender(user.gender),
-        selfAvatarFileId: user.avatar || null,
-        partnerAvatarFileId,
         updatedAt: now
       }
 
+      let savedProfile
       if (existing) {
-        await profiles.doc(existing._id).update({ ...profileData, revision: dbCmd.inc(1) })
-        return success(toClientProfile({ ...existing, ...profileData, revision: (existing.revision || 0) + 1 }))
+        await profiles.doc(existing._id).update({
+          ...profileData,
+          selfName: dbCmd.remove(),
+          selfGender: dbCmd.remove(),
+          selfAvatarFileId: dbCmd.remove(),
+          partnerAvatarFileId: dbCmd.remove(),
+          revision: dbCmd.inc(1)
+        })
+        savedProfile = { ...existing, ...profileData, revision: (existing.revision || 0) + 1 }
+      } else {
+        const profile = {
+          ownerUid: auth.uid,
+          ...profileData,
+          theme: 'warm-paper',
+          createdAt: now,
+          revision: 1
+        }
+        const inserted = await profiles.add(profile)
+        savedProfile = { _id: inserted.id, ...profile }
       }
 
-      const profile = {
-        ownerUid: auth.uid,
-        ...profileData,
-        theme: 'warm-paper',
-        createdAt: now,
-        revision: 1
-      }
-      const inserted = await profiles.add(profile)
-      return success(toClientProfile({ _id: inserted.id, ...profile }))
+      return success({
+        account: {
+          nickname,
+          gender,
+          avatarFileId: savedAvatarFileId
+        },
+        profile: toClientProfile(savedProfile)
+      })
     } catch (error) {
       return normalizeError(error)
     }

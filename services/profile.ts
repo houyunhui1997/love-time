@@ -10,12 +10,8 @@ export interface AccountProfile {
 
 export interface LoveProfile {
   _id: string
-  selfName: string
   partnerName: string
   loveStartDate: string
-  selfGender: Gender | null
-  selfAvatarFileId: string | null
-  partnerAvatarFileId: string | null
   revision: number
 }
 
@@ -25,24 +21,23 @@ interface ApiResponse<T> {
   data: T
 }
 
-export interface SaveLoginProfileParams {
+export interface SaveCompleteProfileParams {
   gender: Gender
   nickname: string
   avatarFileId?: string | null
-}
-
-export interface SaveLoveProfileParams {
-  selfName: string
   partnerName: string
   loveStartDate: string
-  partnerAvatarFileId?: string | null
+}
+
+export interface CompleteProfileResult {
+  account: AccountProfile
+  profile: LoveProfile
 }
 
 interface ProfileCloudObject {
   getAccount(): Promise<ApiResponse<AccountProfile | null>>
   getMine(): Promise<ApiResponse<LoveProfile | null>>
-  saveLoginProfile(params: SaveLoginProfileParams): Promise<ApiResponse<AccountProfile | null>>
-  saveLoveProfile(params: SaveLoveProfileParams): Promise<ApiResponse<LoveProfile | null>>
+  saveCompleteProfile(params: SaveCompleteProfileParams): Promise<ApiResponse<CompleteProfileResult | null>>
 }
 
 function getProfileCloudObject(): ProfileCloudObject {
@@ -61,14 +56,8 @@ export async function getMyLoveProfile(): Promise<LoveProfile | null> {
   return result.data
 }
 
-export async function saveMyLoginProfile(params: SaveLoginProfileParams): Promise<AccountProfile> {
-  const result = await getProfileCloudObject().saveLoginProfile(params)
-  if (result.code !== 0 || !result.data) throw new Error(result.message || '登录资料保存失败')
-  return result.data
-}
-
-export async function saveMyLoveProfile(params: SaveLoveProfileParams): Promise<LoveProfile> {
-  const result = await getProfileCloudObject().saveLoveProfile(params)
-  if (result.code !== 0 || !result.data) throw new Error(result.message || '恋爱档案保存失败')
+export async function saveMyCompleteProfile(params: SaveCompleteProfileParams): Promise<CompleteProfileResult> {
+  const result = await getProfileCloudObject().saveCompleteProfile(params)
+  if (result.code !== 0 || !result.data) throw new Error(result.message || '资料保存失败')
   return result.data
 }

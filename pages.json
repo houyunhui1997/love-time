@@ -1,7 +1,6 @@
 {
   "pages": [
     { "path": "pages/anniversary/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
-    { "path": "pages/onboarding/profile", "style": { "navigationStyle": "custom" } },
     { "path": "pages/anniversary/list", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/anniversary/edit", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/anniversary/detail", "style": { "navigationStyle": "custom", "disableScroll": true } },
@@ -10,7 +9,6 @@
     { "path": "pages/timeline/detail", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/timeline/search", "style": { "navigationStyle": "custom" } },
     { "path": "pages/profile/index", "style": { "navigationStyle": "custom", "backgroundColor": "#FBF4ED" } },
-    { "path": "pages/profile/love-profile", "style": { "navigationStyle": "custom" } },
     { "path": "pages/settings/reminder", "style": { "navigationStyle": "custom" } },
     { "path": "pages/settings/theme", "style": { "navigationStyle": "custom" } },
     { "path": "pages/settings/backup", "style": { "navigationStyle": "custom" } },

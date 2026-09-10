@@ -4,7 +4,7 @@
 
 - `love-common`：统一响应、业务错误和基础字符串校验。
 - `system-co`：无需登录的 `ping()` 健康检查，用于验证客户端与当前 uniCloud 服务空间是否真正连通。
-- `profile-co`：账号资料与个人恋爱档案分离读写（getAccount / getMine / saveLoginProfile / saveLoveProfile）；档案由当前用户独立维护，静默登录不会强制创建档案。
+- `profile-co`：通过 `getAccount / getMine / saveCompleteProfile` 读写个人资料；完善资料弹窗一次保存昵称、头像、性别、在一起日期和可选的对方称呼，静默登录不会强制创建档案。
 - `anniversary-co`：纪念日增删改查（list / detail / create / update / remove，乐观锁 revision）。
 - `moment-co`：时光轴时刻增删改查（list 按月筛选 / detail / create / update / remove，乐观锁 revision）。
 

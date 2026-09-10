@@ -9,12 +9,12 @@
           src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-heart-emblem.png"
           mode="aspectFit"
         />
-        <text class="dialog-title">登录恋时光</text>
-        <text class="dialog-subtitle">登录后，珍藏每一个重要日子</text>
+        <text class="dialog-title">完善恋爱资料</text>
+        <text class="dialog-subtitle">一次填写，开始珍藏每一个重要日子</text>
       </view>
 
       <button class="avatar-picker" open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
-        <image v-if="avatarTempPath" class="avatar-image" :src="avatarTempPath" mode="aspectFill" />
+        <image v-if="avatarPreview" class="avatar-image" :src="avatarPreview" mode="aspectFill" />
         <image v-else class="avatar-placeholder-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-avatar-couple.png" mode="aspectFit" />
         <view class="camera-badge">
           <uni-icons type="camera-filled" size="17" color="#ffffff" />
@@ -53,22 +53,55 @@
         </view>
       </view>
 
-      <button class="login-button" :disabled="submitting" @tap="confirmLogin">
+      <view class="profile-fields">
+        <picker mode="date" :value="loveStartDate" :end="today" @change="onDateChange">
+          <view class="profile-field">
+            <view class="field-label">
+              <uni-icons type="calendar-filled" size="20" color="#b29b8d" />
+              <text>在一起日期</text>
+            </view>
+            <view class="field-value">
+              <text :class="{ placeholder: !loveStartDate }">{{ displayStartDate }}</text>
+              <uni-icons type="right" size="18" color="#b2a198" />
+            </view>
+          </view>
+        </picker>
+        <view class="profile-field">
+          <view class="field-label">
+            <uni-icons type="heart-filled" size="20" color="#b29b8d" />
+            <text>对方称呼</text>
+          </view>
+          <input
+            v-model="partnerName"
+            class="partner-input"
+            maxlength="12"
+            placeholder="选填"
+            placeholder-class="input-placeholder"
+          />
+        </view>
+      </view>
+
+      <button class="login-button" :disabled="submitting || loadingData" @tap="confirmProfile">
         <LoveLoading v-if="submitting" size="mini" text="" :mask="false" />
         <text class="login-button-label" :class="{ spaced: !submitting }">
-          {{ submitting ? '正在登录…' : '登录' }}
+          {{ submitting ? '保存中…' : '完成' }}
         </text>
       </button>
-      <text class="agreement">登录即表示你同意《用户协议》和《隐私政策》</text>
+      <text class="agreement">资料仅用于你的个人恋爱记录，可随时修改</text>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import LoveLoading from '@/components/base/LoveLoading.vue'
-import { loginByWeixin } from '@/services/auth'
-import { saveMyLoginProfile, type AccountProfile } from '@/services/profile'
+import { formatBusinessDate } from '@/utils/date'
+import {
+  getMyAccountProfile,
+  getMyLoveProfile,
+  saveMyCompleteProfile,
+  type CompleteProfileResult
+} from '@/services/profile'
 
 type Gender = 'male' | 'female'
 
@@ -78,13 +111,20 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void
-  (event: 'success', account: AccountProfile): void
+  (event: 'success', result: CompleteProfileResult): void
 }>()
 
 const submitting = ref(false)
+const loadingData = ref(false)
 const selectedGender = ref<Gender | ''>('')
 const nickname = ref('')
 const avatarTempPath = ref('')
+const existingAvatarFileId = ref('')
+const loveStartDate = ref('')
+const partnerName = ref('')
+const today = formatBusinessDate(new Date())
+const avatarPreview = computed(() => avatarTempPath.value || existingAvatarFileId.value)
+const displayStartDate = computed(() => loveStartDate.value ? loveStartDate.value.replace(/-/g, '.') : '请选择')
 const isShortScreen = Number(uni.getSystemInfoSync().windowHeight || 0) < 720
 let tabBarHidden = false
 
@@ -98,7 +138,10 @@ function setTabBarHidden(hidden: boolean) {
 
 watch(
   () => props.modelValue,
-  visible => setTabBarHidden(visible),
+  visible => {
+    setTabBarHidden(visible)
+    if (visible) void loadForm()
+  },
   { immediate: true }
 )
 
@@ -112,12 +155,13 @@ function onChooseAvatar(event: any) {
   avatarTempPath.value = event?.detail?.avatarUrl || ''
 }
 
-async function uploadAvatar(uid: string): Promise<string | null> {
-  if (!avatarTempPath.value) return null
+async function uploadAvatar(): Promise<string | null> {
+  if (!avatarTempPath.value) return existingAvatarFileId.value || null
   const extension = avatarTempPath.value.split('.').pop()?.toLowerCase() || 'jpg'
+  const suffix = Math.random().toString(36).slice(2, 10)
   const result = await uniCloud.uploadFile({
     filePath: avatarTempPath.value,
-    cloudPath: `user/avatar/${uid}-${Date.now()}.${extension}`
+    cloudPath: `user/avatar/${Date.now()}-${suffix}.${extension}`
   })
   return result.fileID
 }
@@ -126,29 +170,55 @@ function resetForm() {
   selectedGender.value = ''
   nickname.value = ''
   avatarTempPath.value = ''
+  existingAvatarFileId.value = ''
+  loveStartDate.value = ''
+  partnerName.value = ''
 }
 
-async function confirmLogin() {
+async function loadForm() {
+  loadingData.value = true
+  try {
+    const [account, profile] = await Promise.all([getMyAccountProfile(), getMyLoveProfile()])
+    selectedGender.value = account.gender || ''
+    nickname.value = account.nickname || ''
+    existingAvatarFileId.value = account.avatarFileId || ''
+    avatarTempPath.value = ''
+    loveStartDate.value = profile?.loveStartDate || ''
+    partnerName.value = profile?.partnerName || ''
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '资料读取失败', icon: 'none' })
+  } finally {
+    loadingData.value = false
+  }
+}
+
+function onDateChange(event: any) {
+  loveStartDate.value = event?.detail?.value || ''
+}
+
+async function confirmProfile() {
   if (!selectedGender.value) return uni.showToast({ title: '请先选择性别', icon: 'none' })
-  if (!avatarTempPath.value) return uni.showToast({ title: '请选择微信头像', icon: 'none' })
+  if (!avatarPreview.value) return uni.showToast({ title: '请选择微信头像', icon: 'none' })
   if (!nickname.value.trim()) return uni.showToast({ title: '请输入微信昵称', icon: 'none' })
+  if (!loveStartDate.value) return uni.showToast({ title: '请选择在一起日期', icon: 'none' })
   if (submitting.value) return
 
   submitting.value = true
   try {
-    const uid = await loginByWeixin()
-    const avatarFileId = await uploadAvatar(uid)
-    const account = await saveMyLoginProfile({
+    const avatarFileId = await uploadAvatar()
+    const result = await saveMyCompleteProfile({
       gender: selectedGender.value,
       nickname: nickname.value.trim(),
-      avatarFileId
+      avatarFileId,
+      loveStartDate: loveStartDate.value,
+      partnerName: partnerName.value.trim()
     })
-    emit('success', account)
+    emit('success', result)
     emit('update:modelValue', false)
     resetForm()
-    uni.showToast({ title: '登录成功', icon: 'success' })
+    uni.showToast({ title: '资料已保存', icon: 'success' })
   } catch (error) {
-    const message = error instanceof Error ? error.message : '登录失败，请稍后重试'
+    const message = error instanceof Error ? error.message : '保存失败，请稍后重试'
     uni.showToast({ title: message, icon: 'none', duration: 2800 })
   } finally {
     submitting.value = false
@@ -171,7 +241,7 @@ async function confirmLogin() {
 .login-sheet {
   box-sizing: border-box;
   display: flex;
-  height: 68vh;
+  height: 88vh;
   min-height: 0;
   width: 100%;
   flex-direction: column;
@@ -192,7 +262,7 @@ async function confirmLogin() {
 }
 
 .login-sheet.short-screen {
-  height: 86vh;
+  height: 94vh;
 }
 
 .sheet-handle {
@@ -338,6 +408,40 @@ async function confirmLogin() {
   box-shadow: inset 0 0 0 1rpx rgba(223, 119, 114, 0.14);
 }
 
+.profile-fields {
+  margin-top: 22rpx;
+  overflow: hidden;
+  border: 1rpx solid rgba(218, 197, 183, 0.76);
+  border-radius: 22rpx;
+  background: rgba(255, 253, 250, 0.84);
+}
+
+.profile-field {
+  display: flex;
+  box-sizing: border-box;
+  height: 88rpx;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 26rpx;
+}
+
+.profile-fields > .profile-field {
+  border-top: 1rpx solid rgba(224, 207, 196, 0.68);
+}
+
+.field-label,
+.field-value {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  color: #67554a;
+  font-size: 26rpx;
+}
+
+.field-value { gap: 8rpx; }
+.placeholder { color: #b2a198; }
+.partner-input { width: 260rpx; height: 100%; color: #5d4c42; font-size: 26rpx; text-align: right; }
+
 .login-button {
   position: relative;
   display: flex;
@@ -346,7 +450,7 @@ async function confirmLogin() {
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  margin: 34rpx 0 0;
+  margin: 24rpx 0 0;
   padding: 0;
   border: 0;
   border-radius: 56rpx;
@@ -391,10 +495,10 @@ async function confirmLogin() {
   }
 
   .avatar-picker {
-    width: 154rpx;
-    height: 154rpx;
-    margin-top: 16rpx;
-    margin-bottom: 22rpx;
+    width: 136rpx;
+    height: 136rpx;
+    margin-top: 10rpx;
+    margin-bottom: 16rpx;
   }
 
   .nickname-field {
@@ -402,21 +506,24 @@ async function confirmLogin() {
   }
 
   .gender-title {
-    margin-top: 22rpx;
+    margin-top: 16rpx;
   }
 
   .gender-option {
-    height: 84rpx;
+    height: 76rpx;
   }
+
+  .profile-fields { margin-top: 16rpx; }
+  .profile-field { height: 78rpx; }
 
   .login-button {
     height: 100rpx;
-    margin-top: 26rpx;
+    margin-top: 18rpx;
     line-height: 100rpx;
   }
 
   .agreement {
-    margin-top: 22rpx;
+    margin-top: 14rpx;
   }
 }
 </style>
