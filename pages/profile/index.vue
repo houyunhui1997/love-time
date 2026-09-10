@@ -12,7 +12,7 @@
           <image class="account-avatar" :src="accountAvatar" mode="aspectFill" @error="avatarFailed = true" />
         </button>
         <text class="identity-name">{{ accountName }}</text>
-        <text class="identity-status">{{ profile ? '已完善资料' : '已临时登录' }}</text>
+        <text class="identity-status">{{ profile ? '' : '已临时登录' }}</text>
       </view>
       <view v-else class="identity identity-offline">
         <image class="offline-emblem" src="/static/profile/companion/heart-emblem.png" mode="aspectFit" />
@@ -31,12 +31,12 @@
               <text class="archive-subtitle">始于 {{ displayStartDate }}</text>
               <text v-if="profile.partnerName" class="partner-name">与 {{ profile.partnerName }} 慢慢相伴</text>
             </template>
-            <text v-else class="archive-subtitle">补充资料，开启专属记录</text>
+            <!-- <text v-else class="archive-subtitle">补充资料，开启专属记录</text> -->
             <button class="profile-button" @tap="openProfileDialog">
               <text>{{ profile ? '编辑资料' : '完善资料' }}</text>
               <uni-icons type="right" size="18" color="#fffaf5" />
             </button>
-            <text v-if="!profile" class="archive-note">稍后填写也可以</text>
+            <!-- <text v-if="!profile" class="archive-note">稍后填写也可以</text> -->
           </view>
         </view>
 
@@ -264,7 +264,7 @@ function openMenu(label: string) {
 .archive-title { font-size: 30rpx; }
 .archive-subtitle { margin-top: 8rpx; font-size: 22rpx; }
 .archive-emblem { top: 28rpx; right: 18rpx; width: 246rpx; height: 180rpx; }
-.profile-button { width: 234rpx; height: 62rpx; margin-top: 14rpx; font-size: 25rpx; }
+.profile-button { width: 234rpx; height: 62rpx; margin-top: 50rpx; font-size: 25rpx; }
 .archive-note { margin-top: 10rpx; font-size: 20rpx; }
 .has-profile { min-height: 254rpx; }
 .has-profile .archive-emblem { top: 34rpx; }
