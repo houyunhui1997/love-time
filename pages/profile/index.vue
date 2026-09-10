@@ -36,8 +36,8 @@
 
     <view v-else-if="isLoggedIn" class="profile-incomplete-card">
       <text class="profile-incomplete-title">恋爱资料可以以后再填</text>
-      <text class="profile-incomplete-copy">补充头像、昵称、性别和在一起日期；对方称呼选填，不完善也不影响记录。</text>
-      <button class="profile-incomplete-button" @tap="openProfileDialog">完善恋爱资料</button>
+      <text class="profile-incomplete-copy">补充头像、昵称和在一起日期；对方称呼选填，不完善也不影响记录。</text>
+      <button class="profile-incomplete-button" @tap="openProfileDialog">登录</button>
     </view>
 
     <view v-else class="guest-home">

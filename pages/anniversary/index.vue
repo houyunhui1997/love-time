@@ -27,6 +27,21 @@
     </view>
 
     <template v-else>
+      <!-- 未完善资料且尚无纪念日：只保留一个核心任务 -->
+      <view v-if="showFirstAnniversaryGuide" class="first-empty-home">
+        <view class="first-empty-visual">
+          <image
+            class="first-empty-art"
+            src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/couple-silhouette.png"
+            mode="aspectFit"
+          />
+        </view>
+        <text class="first-empty-title">从第一个纪念日开始</text>
+        <button class="first-empty-add" @tap="goToAdd">添加纪念日</button>
+        <button class="first-empty-profile" @tap="goToProfileSetup">登录</button>
+      </view>
+
+      <template v-else>
       <!-- 主视觉区 -->
       <view class="hero-section">
         <view v-if="profile?.loveStartDate" class="together-block">
@@ -41,7 +56,7 @@
           <text class="together-label">从今天开始</text>
           <text class="profile-guide-title">记住每一个重要日子</text>
           <text class="profile-guide-copy">恋爱资料可以以后再填，不影响现在使用</text>
-          <button class="profile-guide-button" @tap="goToProfileSetup">完善恋爱资料</button>
+          <button class="profile-guide-button" @tap="goToProfileSetup">登录</button>
         </view>
         <view class="hero-illustration">
           <image
@@ -114,6 +129,7 @@
         <view class="fab-icon">+</view>
         <text class="fab-label">添加纪念日</text>
       </view>
+      </template>
     </template>
 
     <LoveLoginDialog v-model="showProfileDialog" @success="onProfileSaved" />
@@ -187,6 +203,9 @@ const loading = ref(false)
 const empty = ref(false)
 const sessionError = ref(false)
 const showProfileDialog = ref(false)
+const showFirstAnniversaryGuide = computed(
+  () => !loading.value && empty.value && !profile.value?.loveStartDate
+)
 
 function mapItem(item: AnniversaryListItem): AnniversaryItem {
   const isYearly = item.repeatType === 'yearly'
@@ -474,6 +493,77 @@ function onProfileSaved(result: CompleteProfileResult) {
 
 .profile-guide-button::after { border: 0; }
 
+/* 未完善资料且没有纪念日：单一任务空状态 */
+.first-empty-home {
+  position: absolute;
+  top: calc(var(--menu-top) + var(--menu-height));
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18rpx 54rpx 0;
+}
+
+.first-empty-visual {
+  width: 600rpx;
+  max-width: 82vw;
+  height: 660rpx;
+  max-height: 42vh;
+  flex-shrink: 1;
+}
+
+.first-empty-art {
+  width: 100%;
+  height: 100%;
+}
+
+.first-empty-title {
+  margin-top: 6rpx;
+  color: var(--love-color-primary);
+  font-size: 42rpx;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.first-empty-add {
+  display: flex;
+  width: 500rpx;
+  max-width: 72vw;
+  height: 88rpx;
+  align-items: center;
+  justify-content: center;
+  margin: 34rpx 0 0;
+  padding: 0;
+  border-radius: 46rpx;
+  background: linear-gradient(135deg, #ec817b 0%, #dc6c69 100%);
+  box-shadow: 0 14rpx 30rpx rgba(207, 98, 94, 0.2);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 88rpx;
+}
+
+.first-empty-add::after,
+.first-empty-profile::after {
+  border: 0;
+}
+
+.first-empty-profile {
+  height: 64rpx;
+  margin: 18rpx 0 0;
+  padding: 0 24rpx;
+  background: transparent;
+  color: #a49388;
+  font-size: 24rpx;
+  line-height: 64rpx;
+  text-decoration: underline;
+  text-decoration-color: rgba(164, 147, 136, 0.5);
+  text-underline-offset: 8rpx;
+}
+
 /* 插画区 */
 .hero-illustration {
   position: absolute;
@@ -757,6 +847,33 @@ function onProfileSaved(result: CompleteProfileResult) {
  * 页面仍完整渲染三条数据，不依赖隐藏纵向溢出来消除滚动。
  */
 .anniversary-page.compact-screen {
+  .first-empty-home {
+    padding-top: 4rpx;
+  }
+
+  .first-empty-visual {
+    width: 540rpx;
+    max-width: 78vw;
+    height: 560rpx;
+    max-height: 39vh;
+  }
+
+  .first-empty-title {
+    font-size: 38rpx;
+  }
+
+  .first-empty-add {
+    height: 82rpx;
+    margin-top: 28rpx;
+    font-size: 28rpx;
+    line-height: 82rpx;
+  }
+
+  .first-empty-profile {
+    margin-top: 12rpx;
+    font-size: 23rpx;
+  }
+
   .guest-home {
     padding-top: 140rpx;
   }
@@ -916,6 +1033,27 @@ function onProfileSaved(result: CompleteProfileResult) {
 }
 
 .anniversary-page.short-screen {
+  .first-empty-visual {
+    width: 470rpx;
+    max-width: 72vw;
+    height: 450rpx;
+    max-height: 34vh;
+  }
+
+  .first-empty-title {
+    font-size: 34rpx;
+  }
+
+  .first-empty-add {
+    height: 76rpx;
+    margin-top: 22rpx;
+    line-height: 76rpx;
+  }
+
+  .first-empty-profile {
+    margin-top: 8rpx;
+  }
+
   .guest-home {
     padding-top: 10rpx;
   }

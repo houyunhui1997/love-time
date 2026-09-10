@@ -22,7 +22,6 @@ interface ApiResponse<T> {
 }
 
 export interface SaveCompleteProfileParams {
-  gender: Gender
   nickname: string
   avatarFileId?: string | null
   partnerName: string

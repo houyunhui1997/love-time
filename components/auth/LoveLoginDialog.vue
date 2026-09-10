@@ -9,66 +9,54 @@
           src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-heart-emblem.png"
           mode="aspectFit"
         />
-        <text class="dialog-title">完善恋爱资料</text>
-        <text class="dialog-subtitle">一次填写，开始珍藏每一个重要日子</text>
-      </view>
-
-      <button class="avatar-picker" open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
-        <image v-if="avatarPreview" class="avatar-image" :src="avatarPreview" mode="aspectFill" />
-        <image v-else class="avatar-placeholder-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-avatar-couple.png" mode="aspectFit" />
-        <view class="camera-badge">
-          <uni-icons type="camera-filled" size="17" color="#ffffff" />
-        </view>
-      </button>
-
-      <view class="nickname-field">
-        <uni-icons type="person-filled" size="21" color="#b29b8d" />
-        <input
-          v-model="nickname"
-          class="nickname-input"
-          type="nickname"
-          maxlength="20"
-          placeholder="使用微信昵称"
-          placeholder-class="input-placeholder"
-        />
-      </view>
-
-      <text class="gender-title">选择你的性别</text>
-      <view class="gender-options">
-        <view
-          class="gender-option"
-          :class="{ selected: selectedGender === 'male' }"
-          @tap="selectedGender = 'male'"
-        >
-          <uni-icons type="person" size="24" :color="selectedGender === 'male' ? '#d96f6b' : '#9f9187'" />
-          <text>男生</text>
-        </view>
-        <view
-          class="gender-option"
-          :class="{ selected: selectedGender === 'female' }"
-          @tap="selectedGender = 'female'"
-        >
-          <uni-icons type="person-filled" size="24" :color="selectedGender === 'female' ? '#d96f6b' : '#9f9187'" />
-          <text>女生</text>
-        </view>
+        <text class="dialog-title">{{ isEditing ? '编辑恋爱资料' : '完善资料' }}</text>
+        <text class="dialog-subtitle">
+          {{ isEditing ? '更新你的个人资料和恋爱日期' : '记录重要日子，留住恋爱时光' }}
+        </text>
       </view>
 
       <view class="profile-fields">
+        <button class="profile-field avatar-field" open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
+          <view class="field-label">
+            <text>头像</text>
+          </view>
+          <view class="avatar-frame">
+            <image v-if="avatarPreview" class="avatar-image" :src="avatarPreview" mode="aspectFill" />
+            <image v-else class="avatar-placeholder-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-avatar-couple.png" mode="aspectFit" />
+            <view class="camera-badge">
+              <uni-icons type="camera-filled" size="13" color="#ffffff" />
+            </view>
+          </view>
+        </button>
+        <view class="profile-field">
+          <view class="field-label">
+            <uni-icons type="person-filled" size="18" color="#b29b8d" />
+            <text>昵称</text>
+          </view>
+          <input
+            v-model="nickname"
+            class="nickname-input"
+            type="nickname"
+            maxlength="20"
+            placeholder="请输入昵称"
+            placeholder-class="input-placeholder"
+          />
+        </view>
         <picker mode="date" :value="loveStartDate" :end="today" @change="onDateChange">
           <view class="profile-field">
             <view class="field-label">
-              <uni-icons type="calendar-filled" size="20" color="#b29b8d" />
+              <uni-icons type="calendar-filled" size="18" color="#b29b8d" />
               <text>在一起日期</text>
             </view>
             <view class="field-value">
               <text :class="{ placeholder: !loveStartDate }">{{ displayStartDate }}</text>
-              <uni-icons type="right" size="18" color="#b2a198" />
+              <uni-icons type="right" size="16" color="#b2a198" />
             </view>
           </view>
         </picker>
         <view class="profile-field">
           <view class="field-label">
-            <uni-icons type="heart-filled" size="20" color="#b29b8d" />
+            <uni-icons type="heart-filled" size="18" color="#b29b8d" />
             <text>对方称呼</text>
           </view>
           <input
@@ -84,7 +72,7 @@
       <button class="login-button" :disabled="submitting || loadingData" @tap="confirmProfile">
         <LoveLoading v-if="submitting" size="mini" text="" :mask="false" />
         <text class="login-button-label" :class="{ spaced: !submitting }">
-          {{ submitting ? '保存中…' : '完成' }}
+          {{ submitting ? '保存中…' : '保存' }}
         </text>
       </button>
       <text class="agreement">资料仅用于你的个人恋爱记录，可随时修改</text>
@@ -103,8 +91,6 @@ import {
   type CompleteProfileResult
 } from '@/services/profile'
 
-type Gender = 'male' | 'female'
-
 const props = defineProps<{
   modelValue: boolean
 }>()
@@ -116,12 +102,12 @@ const emit = defineEmits<{
 
 const submitting = ref(false)
 const loadingData = ref(false)
-const selectedGender = ref<Gender | ''>('')
 const nickname = ref('')
 const avatarTempPath = ref('')
 const existingAvatarFileId = ref('')
 const loveStartDate = ref('')
 const partnerName = ref('')
+const isEditing = ref(false)
 const today = formatBusinessDate(new Date())
 const avatarPreview = computed(() => avatarTempPath.value || existingAvatarFileId.value)
 const displayStartDate = computed(() => loveStartDate.value ? loveStartDate.value.replace(/-/g, '.') : '请选择')
@@ -167,24 +153,24 @@ async function uploadAvatar(): Promise<string | null> {
 }
 
 function resetForm() {
-  selectedGender.value = ''
   nickname.value = ''
   avatarTempPath.value = ''
   existingAvatarFileId.value = ''
   loveStartDate.value = ''
   partnerName.value = ''
+  isEditing.value = false
 }
 
 async function loadForm() {
   loadingData.value = true
   try {
     const [account, profile] = await Promise.all([getMyAccountProfile(), getMyLoveProfile()])
-    selectedGender.value = account.gender || ''
     nickname.value = account.nickname || ''
     existingAvatarFileId.value = account.avatarFileId || ''
     avatarTempPath.value = ''
     loveStartDate.value = profile?.loveStartDate || ''
     partnerName.value = profile?.partnerName || ''
+    isEditing.value = Boolean(profile?.loveStartDate)
   } catch (error) {
     uni.showToast({ title: error instanceof Error ? error.message : '资料读取失败', icon: 'none' })
   } finally {
@@ -197,9 +183,8 @@ function onDateChange(event: any) {
 }
 
 async function confirmProfile() {
-  if (!selectedGender.value) return uni.showToast({ title: '请先选择性别', icon: 'none' })
-  if (!avatarPreview.value) return uni.showToast({ title: '请选择微信头像', icon: 'none' })
-  if (!nickname.value.trim()) return uni.showToast({ title: '请输入微信昵称', icon: 'none' })
+  if (!avatarPreview.value) return uni.showToast({ title: '请选择头像', icon: 'none' })
+  if (!nickname.value.trim()) return uni.showToast({ title: '请输入昵称', icon: 'none' })
   if (!loveStartDate.value) return uni.showToast({ title: '请选择在一起日期', icon: 'none' })
   if (submitting.value) return
 
@@ -207,16 +192,16 @@ async function confirmProfile() {
   try {
     const avatarFileId = await uploadAvatar()
     const result = await saveMyCompleteProfile({
-      gender: selectedGender.value,
       nickname: nickname.value.trim(),
       avatarFileId,
       loveStartDate: loveStartDate.value,
       partnerName: partnerName.value.trim()
     })
+    const successMessage = isEditing.value ? '资料已保存' : '登录成功'
     emit('success', result)
     emit('update:modelValue', false)
     resetForm()
-    uni.showToast({ title: '资料已保存', icon: 'success' })
+    uni.showToast({ title: successMessage, icon: 'success' })
   } catch (error) {
     const message = error instanceof Error ? error.message : '保存失败，请稍后重试'
     uni.showToast({ title: message, icon: 'none', duration: 2800 })
@@ -241,14 +226,15 @@ async function confirmProfile() {
 .login-sheet {
   box-sizing: border-box;
   display: flex;
-  height: 88vh;
+  height: auto;
+  max-height: calc(100vh - 120rpx);
   min-height: 0;
   width: 100%;
   flex-direction: column;
-  padding: 14rpx 46rpx calc(env(safe-area-inset-bottom) + 30rpx);
+  padding: 10rpx 40rpx calc(env(safe-area-inset-bottom) + 22rpx);
   border: 2rpx solid rgba(232, 213, 199, 0.92);
   border-bottom: 0;
-  border-radius: 56rpx 56rpx 0 0;
+  border-radius: 40rpx 40rpx 0 0;
   background-color: #fcf7f1;
   background-image:
     radial-gradient(circle at 50% 3%, rgba(255, 255, 255, 0.82), transparent 40%),
@@ -262,13 +248,13 @@ async function confirmProfile() {
 }
 
 .login-sheet.short-screen {
-  height: 94vh;
+  max-height: calc(100vh - 48rpx);
 }
 
 .sheet-handle {
-  width: 70rpx;
-  height: 7rpx;
-  margin: 0 auto 14rpx;
+  width: 58rpx;
+  height: 6rpx;
+  margin: 0 auto 10rpx;
   border-radius: 4rpx;
   background: #ddd0c4;
 }
@@ -280,45 +266,23 @@ async function confirmProfile() {
 }
 
 .heading-emblem {
-  width: 230rpx;
-  height: 132rpx;
+  width: 176rpx;
+  height: 96rpx;
 }
 
 .dialog-title {
-  margin-top: -8rpx;
+  margin-top: -4rpx;
   color: #554238;
-  font-size: 42rpx;
+  font-size: 34rpx;
   font-weight: 600;
   line-height: 1.35;
 }
 
 .dialog-subtitle {
-  margin-top: 6rpx;
+  margin-top: 4rpx;
   color: #9a8376;
-  font-size: 25rpx;
+  font-size: 22rpx;
   line-height: 1.4;
-}
-
-.avatar-picker {
-  position: relative;
-  display: flex;
-  width: 176rpx;
-  height: 176rpx;
-  align-items: center;
-  justify-content: center;
-  margin: 22rpx auto 28rpx;
-  padding: 0;
-  overflow: visible;
-  border: 3rpx solid rgba(255, 255, 255, 0.92);
-  border-radius: 50%;
-  background: rgba(255, 253, 250, 0.92);
-  box-shadow:
-    0 0 0 2rpx rgba(226, 184, 174, 0.72),
-    0 10rpx 24rpx rgba(115, 82, 61, 0.1);
-
-  &::after {
-    border: 0;
-  }
 }
 
 .avatar-image {
@@ -339,8 +303,8 @@ async function confirmProfile() {
   right: -4rpx;
   bottom: 2rpx;
   display: flex;
-  width: 48rpx;
-  height: 48rpx;
+  width: 34rpx;
+  height: 34rpx;
   align-items: center;
   justify-content: center;
   border: 4rpx solid #fcf7f1;
@@ -348,84 +312,71 @@ async function confirmProfile() {
   background: #df7671;
 }
 
-.nickname-field {
-  display: flex;
-  box-sizing: border-box;
-  height: 96rpx;
-  align-items: center;
-  gap: 16rpx;
-  padding: 0 26rpx;
-  border: 1rpx solid rgba(218, 197, 183, 0.76);
-  border-radius: 22rpx;
-  background: rgba(255, 253, 250, 0.84);
-  box-shadow:
-    inset 0 2rpx 0 rgba(255, 255, 255, 0.9),
-    0 6rpx 18rpx rgba(104, 75, 56, 0.04);
-}
-
 .nickname-input {
-  flex: 1;
+  width: 300rpx;
   height: 100%;
   color: #5d4c42;
-  font-size: 28rpx;
+  font-size: 24rpx;
+  text-align: right;
 }
 
 .input-placeholder {
   color: #b2a198;
 }
 
-.gender-title {
-  display: block;
-  margin: 28rpx 0 16rpx;
-  color: #604d42;
-  font-size: 27rpx;
-  font-weight: 600;
-}
-
-.gender-options {
-  display: flex;
-  gap: 18rpx;
-}
-
-.gender-option {
-  display: flex;
-  flex: 1;
-  height: 92rpx;
-  align-items: center;
-  justify-content: center;
-  gap: 10rpx;
-  border: 1rpx solid rgba(218, 197, 183, 0.76);
-  border-radius: 21rpx;
-  background: rgba(255, 253, 250, 0.84);
-  color: #78685f;
-  font-size: 26rpx;
-}
-
-.gender-option.selected {
-  border-color: #df7772;
-  background: rgba(255, 239, 235, 0.9);
-  color: #d96f6b;
-  box-shadow: inset 0 0 0 1rpx rgba(223, 119, 114, 0.14);
-}
-
 .profile-fields {
-  margin-top: 22rpx;
+  margin-top: 20rpx;
   overflow: hidden;
   border: 1rpx solid rgba(218, 197, 183, 0.76);
-  border-radius: 22rpx;
+  border-radius: 18rpx;
   background: rgba(255, 253, 250, 0.84);
 }
 
 .profile-field {
   display: flex;
   box-sizing: border-box;
-  height: 88rpx;
+  height: 72rpx;
   align-items: center;
   justify-content: space-between;
-  padding: 0 26rpx;
+  padding: 0 22rpx;
+}
+
+.avatar-field {
+  width: 100%;
+  height: 116rpx;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #67554a;
+  line-height: normal;
+}
+
+.avatar-field::after {
+  border: 0;
+}
+
+.avatar-frame {
+  position: relative;
+  width: 88rpx;
+  height: 88rpx;
+  overflow: visible;
+  border: 3rpx solid rgba(255, 255, 255, 0.94);
+  border-radius: 50%;
+  background: #fffaf5;
+  box-shadow: 0 0 0 2rpx rgba(226, 184, 174, 0.58);
 }
 
 .profile-fields > .profile-field {
+  border-top: 1rpx solid rgba(224, 207, 196, 0.68);
+}
+
+.profile-fields > .avatar-field {
+  border-top: 0;
+}
+
+.profile-fields > picker {
+  display: block;
   border-top: 1rpx solid rgba(224, 207, 196, 0.68);
 }
 
@@ -433,33 +384,33 @@ async function confirmProfile() {
 .field-value {
   display: flex;
   align-items: center;
-  gap: 14rpx;
+  gap: 12rpx;
   color: #67554a;
-  font-size: 26rpx;
+  font-size: 24rpx;
 }
 
 .field-value { gap: 8rpx; }
 .placeholder { color: #b2a198; }
-.partner-input { width: 260rpx; height: 100%; color: #5d4c42; font-size: 26rpx; text-align: right; }
+.partner-input { width: 260rpx; height: 100%; color: #5d4c42; font-size: 24rpx; text-align: right; }
 
 .login-button {
   position: relative;
   display: flex;
   width: 100%;
-  height: 112rpx;
+  height: 84rpx;
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  margin: 24rpx 0 0;
+  margin: 18rpx 0 0;
   padding: 0;
   border: 0;
-  border-radius: 56rpx;
+  border-radius: 42rpx;
   background: linear-gradient(135deg, #e9817b 0%, #db6b6a 100%);
   box-shadow: 0 14rpx 30rpx rgba(207, 99, 94, 0.22);
   color: #ffffff;
-  font-size: 33rpx;
+  font-size: 28rpx;
   font-weight: 600;
-  line-height: 112rpx;
+  line-height: 84rpx;
 
   &::after {
     border: 0;
@@ -467,8 +418,8 @@ async function confirmProfile() {
 }
 
 .login-button-label.spaced {
-  letter-spacing: 24rpx;
-  text-indent: 24rpx;
+  letter-spacing: 8rpx;
+  text-indent: 8rpx;
 }
 
 .login-button[disabled] {
@@ -477,49 +428,32 @@ async function confirmProfile() {
 
 .agreement {
   display: block;
-  margin-top: 30rpx;
+  margin-top: 18rpx;
   color: #aa998f;
-  font-size: 21rpx;
+  font-size: 20rpx;
   line-height: 1.45;
   text-align: center;
 }
 
 .login-sheet.short-screen {
   .heading-emblem {
-    width: 206rpx;
-    height: 116rpx;
+    width: 156rpx;
+    height: 82rpx;
   }
 
   .dialog-title {
-    font-size: 38rpx;
+    font-size: 32rpx;
   }
 
-  .avatar-picker {
-    width: 136rpx;
-    height: 136rpx;
-    margin-top: 10rpx;
-    margin-bottom: 16rpx;
-  }
-
-  .nickname-field {
-    height: 88rpx;
-  }
-
-  .gender-title {
-    margin-top: 16rpx;
-  }
-
-  .gender-option {
-    height: 76rpx;
-  }
-
-  .profile-fields { margin-top: 16rpx; }
-  .profile-field { height: 78rpx; }
+  .profile-fields { margin-top: 14rpx; }
+  .avatar-field { height: 98rpx; }
+  .avatar-frame { width: 74rpx; height: 74rpx; }
+  .profile-field { height: 66rpx; }
 
   .login-button {
-    height: 100rpx;
-    margin-top: 18rpx;
-    line-height: 100rpx;
+    height: 76rpx;
+    margin-top: 14rpx;
+    line-height: 76rpx;
   }
 
   .agreement {

@@ -82,12 +82,10 @@ module.exports = {
   async saveCompleteProfile(params = {}) {
     try {
       const auth = await requireAuth(this)
-      const gender = params.gender
       const nickname = typeof params.nickname === 'string' ? params.nickname.trim() : ''
       const avatarFileId = typeof params.avatarFileId === 'string' && params.avatarFileId ? params.avatarFileId : null
       const partnerName = typeof params.partnerName === 'string' ? params.partnerName.trim() : ''
       const loveStartDate = validateDate(params.loveStartDate)
-      if (!['male', 'female'].includes(gender)) throw new AppError(API_CODE.INVALID_PARAMS, '请选择性别')
       if (!nickname || nickname.length > 20) throw new AppError(API_CODE.INVALID_PARAMS, '请输入1至20个字符的昵称')
       if (partnerName.length > 12) throw new AppError(API_CODE.INVALID_PARAMS, '对方称呼不能超过12个字符')
 
@@ -96,7 +94,7 @@ module.exports = {
       if (!user) throw new AppError(API_CODE.NOT_FOUND, '账号不存在')
       const savedAvatarFileId = avatarFileId || user.avatar || null
       if (!savedAvatarFileId) throw new AppError(API_CODE.INVALID_PARAMS, '请选择头像')
-      const userUpdate = { nickname, gender: gender === 'male' ? 1 : 2 }
+      const userUpdate = { nickname }
       userUpdate.avatar = savedAvatarFileId
       await users.doc(auth.uid).update(userUpdate)
 
@@ -135,7 +133,7 @@ module.exports = {
       return success({
         account: {
           nickname,
-          gender,
+          gender: normalizeGender(user.gender),
           avatarFileId: savedAvatarFileId
         },
         profile: toClientProfile(savedProfile)
