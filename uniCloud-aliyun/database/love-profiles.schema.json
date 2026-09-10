@@ -1,7 +1,7 @@
 {
   "bsonType": "object",
   "description": "恋爱档案",
-  "required": ["ownerUid", "coupleId", "selfName", "partnerName", "selfAvatarFileId", "selfGender", "partnerAvatarFileId", "loveStartDate", "theme", "createdAt", "updatedAt", "revision"],
+  "required": ["ownerUid", "selfName", "partnerName", "selfAvatarFileId", "selfGender", "partnerAvatarFileId", "loveStartDate", "theme", "createdAt", "updatedAt", "revision"],
   "permission": {
     "read": false,
     "create": false,
@@ -12,11 +12,10 @@
   "properties": {
     "_id": { "description": "系统主键" },
     "ownerUid": { "bsonType": "string", "description": "档案创建者" },
-    "coupleId": { "bsonType": ["string", "null"], "description": "情侣关系ID" },
     "selfName": { "bsonType": "string", "minLength": 1, "maxLength": 12 },
     "partnerName": { "bsonType": "string", "minLength": 1, "maxLength": 12 },
     "selfAvatarFileId": { "bsonType": ["string", "null"] },
-    "selfGender": { "bsonType": "string", "enum": ["male", "female"], "description": "当前用户性别" },
+    "selfGender": { "bsonType": ["string", "null"], "enum": ["male", "female", null], "description": "当前用户性别（可选）" },
     "partnerAvatarFileId": { "bsonType": ["string", "null"] },
     "loveStartDate": { "bsonType": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
     "theme": { "bsonType": "string", "enum": ["warm-paper", "clean"] },

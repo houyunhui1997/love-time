@@ -60,12 +60,6 @@
             </view>
             <text class="meta-value mood-value">{{ moodOption.label }}</text>
           </view>
-          <view class="meta-item">
-            <view class="meta-label">
-              <uni-icons :type="visibilityIcon" size="21" color="#9c8477" />
-              <text>{{ visibilityLabel }}</text>
-            </view>
-          </view>
         </view>
 
         <button class="edit-button" @tap="goToEdit">编辑这段时光</button>
@@ -84,7 +78,7 @@ import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import { getMomentMoodColor, getMomentMoodOption } from '@/constants/moment-moods'
-import type { MomentMood, Visibility } from '@/types/domain'
+import type { MomentMood } from '@/types/domain'
 import { getMoment, removeMoment } from '@/services/moment'
 import { getTempFileUrls } from '@/services/media'
 
@@ -92,7 +86,6 @@ interface MomentDetail {
   _id: string
   content: string
   mood: MomentMood
-  visibility: Visibility
   occurredAt: number
   images: string[]
 }
@@ -125,8 +118,6 @@ const moodOption = computed(() => getMomentMoodOption(moment.value?.mood || 'war
 const moodColor = computed(() => getMomentMoodColor(moment.value?.mood || 'warm'))
 const visibleImages = computed(() => moment.value?.images.slice(0, 3) || [])
 const hiddenImageCount = computed(() => Math.max(0, (moment.value?.images.length || 0) - 3))
-const visibilityLabel = computed(() => moment.value?.visibility === 'couple' ? '双方可见' : '仅自己可见')
-const visibilityIcon = computed(() => moment.value?.visibility === 'couple' ? 'eye' : 'locked')
 
 function pad(value: number) {
   return String(value).padStart(2, '0')
@@ -158,7 +149,6 @@ async function loadMoment() {
       _id: data._id,
       content: data.content,
       mood: data.mood,
-      visibility: data.visibility,
       occurredAt: data.occurredAt,
       images: data.mediaIds.map(fileId => urlMap[fileId] || fileId).filter(Boolean)
     }

@@ -103,11 +103,12 @@ export async function loginByWeixin(): Promise<string> {
 
 /**
  * 恢复微信会话：本地 Token 仅作为候选凭证，必须通过云端账户校验；
- * Token 失效时再尝试通过 OpenID 恢复数据库中的已有账号。
- * 新用户保持游客状态，不会在启动阶段被自动注册。
+ * Token 失效或首次打开时，通过微信静默登录恢复或创建永久账号。
+ * 该过程不读取头像、昵称、手机号等用户资料。
  */
 export function restoreWeixinSession(): Promise<boolean> {
   if (restorePromise) return restorePromise
+  if (restoreChecked && hasValidSession()) return Promise.resolve(true)
 
   restorePromise = (async () => {
     const hadLocalToken = Boolean(uni.getStorageSync('uni_id_token'))
@@ -134,7 +135,7 @@ export function restoreWeixinSession(): Promise<boolean> {
     if (!shouldTryExistingOpenId) return false
 
     try {
-      await requestWeixinLogin(true)
+      await requestWeixinLogin(false)
       restoreChecked = true
       return true
     } catch (error) {

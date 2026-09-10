@@ -3,7 +3,6 @@
   "description": "纪念日",
   "required": [
     "creatorUid",
-    "visibility",
     "title",
     "eventType",
     "targetDate",
@@ -29,8 +28,6 @@
   "properties": {
     "_id": { "description": "系统主键" },
     "creatorUid": { "bsonType": "string" },
-    "coupleId": { "bsonType": ["string", "null"] },
-    "visibility": { "bsonType": "string", "enum": ["private", "couple"] },
     "title": { "bsonType": "string", "minLength": 1, "maxLength": 20 },
     "eventType": { "bsonType": "string", "enum": ["countdown", "anniversary", "birthday"] },
     "targetDate": { "bsonType": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },

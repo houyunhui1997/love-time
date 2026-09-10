@@ -12,9 +12,8 @@ interface SystemCloudObject {
   ping(): Promise<ApiResult<SystemHealth>>
 }
 
-const systemCloudObject = createCloudObject<SystemCloudObject>('system-co')
+const systemCloudObject = createCloudObject<SystemCloudObject>('system-co', { requireSession: false })
 
 export function pingCloudService() {
   return systemCloudObject.ping()
 }
-

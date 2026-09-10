@@ -12,7 +12,7 @@
       </view>
       <view class="identity-copy">
         <text class="identity-name">{{ accountName }}</text>
-        <text class="identity-status">已登录 · 恋时光账号</text>
+        <text class="identity-status">已安全连接 · 数据保存至服务器</text>
       </view>
       <view class="identity-badge">
         <uni-icons type="heart-filled" size="16" color="#d87974" />
@@ -35,18 +35,22 @@
     </view>
 
     <view v-else-if="isLoggedIn" class="profile-incomplete-card">
-      <text class="profile-incomplete-title">恋爱档案尚未建立</text>
-      <text class="profile-incomplete-copy">填写双方称呼和在一起日期，开启属于你们的恋爱档案。</text>
-      <button class="profile-incomplete-button" @tap="openLoveProfile">去填写资料</button>
+      <text class="profile-incomplete-title">恋爱资料可以以后再填</text>
+      <text class="profile-incomplete-copy">称呼和在一起日期只用于个性化展示，不影响记录纪念日和时光。</text>
+      <button class="profile-incomplete-button" @tap="openLoveProfile">完善恋爱资料</button>
     </view>
 
-    <view v-else class="guest-panel">
-      <view class="guest-avatar">
-        <uni-icons type="person-filled" size="34" color="#d77873" />
-      </view>
-      <text class="guest-title">登录恋时光</text>
-      <text class="guest-tip">登录后可查看恋爱资料与个人设置</text>
-      <button class="login-button" @tap="openLoginPanel"><text>登　录</text></button>
+    <view v-else class="guest-home">
+      <image
+        class="guest-hero-art"
+        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-hero-memory-book.png"
+        mode="aspectFit"
+      />
+      <text class="guest-heading">暂时无法连接服务</text>
+      <text class="guest-copy">请检查网络后重试，你的记录都会保存在服务器</text>
+      <button class="guest-login-button" @tap="loadProfilePage">
+        <text>重新连接</text>
+      </button>
     </view>
 
     <template v-if="isLoggedIn">
@@ -68,16 +72,14 @@
       </view>
     </template>
 
-    <LoveLoginDialog v-model="showLoginPanel" @success="onLoginSuccess" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
 import { differenceInCalendarDays, formatBusinessDate } from '@/utils/date'
-import { clearSession, restoreWeixinSession } from '@/services/auth'
+import { restoreWeixinSession } from '@/services/auth'
 import {
   getMyAccountProfile,
   getMyLoveProfile,
@@ -86,7 +88,6 @@ import {
 } from '@/services/profile'
 
 const isLoggedIn = ref(false)
-const showLoginPanel = ref(false)
 const account = ref<AccountProfile | null>(null)
 const profile = ref<LoveProfile | null>(null)
 
@@ -122,23 +123,17 @@ interface MenuItem {
 const menuGroups: MenuItem[][] = [
   [
     { label: '恋爱资料', icon: 'contact', caption: '称呼与恋爱日期' },
-    { label: '提醒设置', icon: 'notification', caption: '重要日子不遗漏' },
-    { label: '主题外观', icon: 'color', caption: '装点恋时光' }
+    { label: '提醒设置', icon: 'notification', caption: '重要日子不遗漏' }
   ],
   [
-    { label: '数据备份与恢复', icon: 'cloud-upload' },
     { label: '隐私与协议', icon: 'locked' },
-    { label: '账号与数据', icon: 'person' },
     { label: '关于恋时光', icon: 'info' }
   ]
 ]
 
 const routeByMenu: Record<string, string> = {
   提醒设置: '/pages/settings/reminder',
-  主题外观: '/pages/settings/theme',
-  数据备份与恢复: '/pages/settings/backup',
   隐私与协议: '/pages/settings/privacy',
-  账号与数据: '/pages/settings/account',
   关于恋时光: '/pages/settings/about'
 }
 
@@ -151,14 +146,10 @@ const displayStartDate = computed(() => profile.value?.loveStartDate.replace(/-/
 onShow(loadProfilePage)
 
 async function loadProfilePage() {
-  const shouldOpenLoginPanel = Boolean(uni.getStorageSync('love_open_login_panel'))
-  if (shouldOpenLoginPanel) uni.removeStorageSync('love_open_login_panel')
-
   isLoggedIn.value = await restoreWeixinSession()
   if (!isLoggedIn.value) {
     account.value = null
     profile.value = null
-    if (shouldOpenLoginPanel) showLoginPanel.value = true
     return
   }
 
@@ -171,25 +162,8 @@ async function loadProfilePage() {
     profile.value = profileResult
   } catch (error) {
     const message = error instanceof Error ? error.message : '资料读取失败'
-    if (message.includes('登录状态') || message.includes('账号资料读取失败')) {
-      clearSession()
-      isLoggedIn.value = false
-      account.value = null
-      profile.value = null
-      return
-    }
     uni.showToast({ title: message, icon: 'none' })
   }
-}
-
-function openLoginPanel() {
-  showLoginPanel.value = true
-}
-
-function onLoginSuccess(accountResult: AccountProfile) {
-  account.value = accountResult
-  isLoggedIn.value = true
-  openLoveProfile()
 }
 
 function openLoveProfile() {
@@ -284,17 +258,61 @@ function openMenu(label: string) {
 .days-unit { margin-left: 6rpx; font-size: 22rpx; }
 .start-date { margin-top: 9rpx; color: #95857a; font-size: 20rpx; }
 
-.profile-incomplete-card,
-.guest-panel { margin-top: 24rpx; padding: 38rpx 30rpx; border: 1rpx solid rgba(255, 255, 255, 0.9); border-radius: 28rpx; background: rgba(252, 247, 241, 0.9); box-shadow: 0 12rpx 30rpx rgba(103, 73, 54, 0.08); text-align: center; }
-.profile-incomplete-title,
-.guest-title { display: block; color: #554238; font-size: 30rpx; font-weight: 600; }
-.profile-incomplete-copy,
-.guest-tip { display: block; margin-top: 12rpx; color: #99877c; font-size: 22rpx; line-height: 1.55; }
-.profile-incomplete-button,
-.login-button { display: flex; width: 330rpx; height: 72rpx; align-items: center; justify-content: center; margin: 26rpx auto 0; padding: 0; border: 0; border-radius: 36rpx; background: #df7772; color: #fff; font-size: 26rpx; line-height: 72rpx; }
-.profile-incomplete-button::after,
-.login-button::after { border: 0; }
-.guest-avatar { display: flex; width: 92rpx; height: 92rpx; align-items: center; justify-content: center; margin: 0 auto 22rpx; border-radius: 50%; background: #f8e8df; box-shadow: 0 0 0 2rpx rgba(220, 123, 116, 0.25); }
+.profile-incomplete-card { margin-top: 24rpx; padding: 38rpx 30rpx; border: 1rpx solid rgba(255, 255, 255, 0.9); border-radius: 28rpx; background: rgba(252, 247, 241, 0.9); box-shadow: 0 12rpx 30rpx rgba(103, 73, 54, 0.08); text-align: center; }
+.profile-incomplete-title { display: block; color: #554238; font-size: 30rpx; font-weight: 600; }
+.profile-incomplete-copy { display: block; margin-top: 12rpx; color: #99877c; font-size: 22rpx; line-height: 1.55; }
+.profile-incomplete-button { display: flex; width: 330rpx; height: 72rpx; align-items: center; justify-content: center; margin: 26rpx auto 0; padding: 0; border: 0; border-radius: 36rpx; background: #df7772; color: #fff; font-size: 26rpx; line-height: 72rpx; }
+.profile-incomplete-button::after { border: 0; }
+
+/* 服务连接失败状态（与首页一致） */
+.guest-home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 30rpx;
+}
+
+.guest-hero-art { width: 510rpx; height: 442rpx; }
+
+.guest-heading {
+  display: block;
+  margin-top: 14rpx;
+  color: #5b493e;
+  font-size: 34rpx;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.guest-copy {
+  display: block;
+  max-width: 520rpx;
+  margin-top: 18rpx;
+  color: #987f70;
+  font-size: 24rpx;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.guest-login-button {
+  display: flex;
+  width: 440rpx;
+  height: 86rpx;
+  align-items: center;
+  justify-content: center;
+  gap: 14rpx;
+  margin-top: 38rpx;
+  padding: 0;
+  border-radius: 44rpx;
+  background: linear-gradient(135deg, #ea817b 0%, #da6968 100%);
+  box-shadow: 0 12rpx 28rpx rgba(207, 100, 96, 0.22);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 500;
+  line-height: 86rpx;
+
+  &::after { border: 0; }
+}
 
 .menu-group { margin-top: 26rpx; padding: 0 24rpx; border: 1rpx solid rgba(255, 255, 255, 0.9); border-radius: 26rpx; background: rgba(252, 247, 241, 0.9); box-shadow: 0 10rpx 28rpx rgba(103, 73, 54, 0.07), inset 0 1rpx 0 rgba(255, 255, 255, 0.88); }
 .menu-group + .menu-group { margin-top: 18rpx; }
@@ -311,6 +329,10 @@ function openMenu(label: string) {
   .account-avatar, .avatar-fallback { width: 76rpx; height: 76rpx; flex-basis: 76rpx; }
   .archive-card { height: 346rpx; margin-top: 18rpx; }
   .self-name, .partner-name { top: 224rpx; }
+  .guest-home { padding-top: 6rpx; }
+  .guest-hero-art { width: 400rpx; height: 347rpx; }
+  .guest-heading { margin-top: 8rpx; font-size: 31rpx; }
+  .guest-login-button { width: 414rpx; height: 80rpx; margin-top: 26rpx; font-size: 28rpx; line-height: 80rpx; }
   .menu-group { margin-top: 18rpx; }
   .menu-row { height: 78rpx; }
 }

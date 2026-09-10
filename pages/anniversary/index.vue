@@ -12,30 +12,36 @@
       <text class="nav-title">恋时光纪念日</text>
     </view>
 
-    <!-- 未登录状态 -->
-    <view v-if="!isLoggedIn" class="guest-home">
+    <!-- 静默连接失败时允许用户主动重试 -->
+    <view v-if="sessionError" class="guest-home">
       <image
         class="guest-hero-art"
         src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-hero-memory-book.png"
         mode="aspectFit"
       />
-      <text class="guest-heading">从今天开始，记录我们的故事</text>
-      <button class="guest-login-button" @tap="goToLogin">
-        <uni-icons type="weixin" size="25" color="#ffffff" />
-        <text>微信登录</text>
+      <text class="guest-heading">暂时无法连接服务</text>
+      <text class="guest-subtitle">请检查网络后重试，你的记录都会保存在服务器</text>
+      <button class="guest-login-button" @tap="retrySession">
+        <text>重新连接</text>
       </button>
     </view>
 
-    <template v-else-if="profile">
+    <template v-else>
       <!-- 主视觉区 -->
       <view class="hero-section">
-        <view class="together-block">
+        <view v-if="profile?.loveStartDate" class="together-block">
           <text class="together-label">我们在一起</text>
           <view class="days-row">
             <text class="days-number">{{ togetherDays }}</text>
             <text class="days-unit">天</text>
           </view>
           <text class="start-date">始于 {{ displayStartDate }}</text>
+        </view>
+        <view v-else class="together-block profile-guide">
+          <text class="together-label">从今天开始</text>
+          <text class="profile-guide-title">记住每一个重要日子</text>
+          <text class="profile-guide-copy">恋爱资料可以以后再填，不影响现在使用</text>
+          <button class="profile-guide-button" @tap="goToProfileSetup">完善恋爱资料</button>
         </view>
         <view class="hero-illustration">
           <image
@@ -110,18 +116,6 @@
       </view>
     </template>
 
-    <view v-else-if="!loading" class="profile-setup-home">
-      <image
-        class="profile-setup-art"
-        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-hero-memory-book.png"
-        mode="aspectFit"
-      />
-      <text class="profile-setup-title">建立你们的恋爱档案</text>
-      <text class="profile-setup-copy">填写双方称呼和在一起日期后，首页才会开始记录相伴时光</text>
-      <button class="profile-setup-button" @tap="goToProfileSetup">去填写资料</button>
-    </view>
-
-    <LoveLoginDialog v-model="showLoginDialog" @success="onLoginSuccess" />
     <LoveLoading :visible="loading" fullscreen text="正在加载纪念日" />
   </view>
 </template>
@@ -129,11 +123,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import { differenceInCalendarDays, formatBusinessDate, getNextYearlyOccurrence } from '@/utils/date'
-import { getMyLoveProfile, type AccountProfile, type LoveProfile } from '@/services/profile'
-import { hasValidSession, restoreWeixinSession } from '@/services/auth'
+import { getMyLoveProfile, type LoveProfile } from '@/services/profile'
+import { restoreWeixinSession } from '@/services/auth'
 import { listAnniversaries, type AnniversaryListItem } from '@/services/anniversary'
 
 const systemInfo = uni.getSystemInfoSync()
@@ -190,8 +183,7 @@ const displayStartDate = computed(() => {
 const recentAnniversaries = ref<AnniversaryItem[]>([])
 const loading = ref(false)
 const empty = ref(false)
-const isLoggedIn = ref(false)
-const showLoginDialog = ref(false)
+const sessionError = ref(false)
 
 function mapItem(item: AnniversaryListItem): AnniversaryItem {
   const isYearly = item.repeatType === 'yearly'
@@ -215,15 +207,11 @@ function mapItem(item: AnniversaryListItem): AnniversaryItem {
 }
 
 async function loadData() {
-  if (!hasValidSession()) {
-    loading.value = false
-    return
-  }
   loading.value = true
   try {
     profile.value = await getMyLoveProfile()
   } catch {
-    // 档案读取失败时忽略
+    profile.value = null
   }
 
   try {
@@ -249,8 +237,8 @@ async function loadData() {
 
 onShow(async () => {
   loading.value = true
-  isLoggedIn.value = await restoreWeixinSession()
-  if (!isLoggedIn.value) {
+  sessionError.value = !(await restoreWeixinSession())
+  if (sessionError.value) {
     recentAnniversaries.value = []
     empty.value = false
     loading.value = false
@@ -271,14 +259,14 @@ function goToAdd() {
   uni.navigateTo({ url: '/pages/anniversary/edit' })
 }
 
-function goToLogin() {
-  showLoginDialog.value = true
-}
-
-async function onLoginSuccess(_account: AccountProfile) {
-  isLoggedIn.value = true
+async function retrySession() {
+  loading.value = true
+  sessionError.value = !(await restoreWeixinSession())
+  if (sessionError.value) {
+    loading.value = false
+    return
+  }
   await loadData()
-  if (!profile.value) goToProfileSetup()
 }
 
 function goToProfileSetup() {
@@ -325,7 +313,7 @@ function goToProfileSetup() {
   color: #514137;
 }
 
-/* 未登录状态 */
+/* 服务连接失败状态 */
 .guest-home {
   position: absolute;
   top: calc(var(--menu-top) + var(--menu-height));
@@ -349,26 +337,6 @@ function goToProfileSetup() {
   display: block;
   text-align: center;
 }
-
-/* 已登录但尚未建立恋爱档案 */
-.profile-setup-home {
-  position: absolute;
-  top: calc(var(--menu-top) + var(--menu-height));
-  right: 0;
-  bottom: 0;
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 70rpx 64rpx 0;
-  text-align: center;
-}
-
-.profile-setup-art { width: 450rpx; height: 390rpx; }
-.profile-setup-title { margin-top: 24rpx; color: #59483d; font-size: 35rpx; font-weight: 600; }
-.profile-setup-copy { max-width: 540rpx; margin-top: 18rpx; color: #987f70; font-size: 25rpx; line-height: 1.65; }
-.profile-setup-button { display: flex; width: 410rpx; height: 82rpx; align-items: center; justify-content: center; margin-top: 38rpx; padding: 0; border: 0; border-radius: 42rpx; background: linear-gradient(135deg,#ea817b,#da6968); box-shadow: 0 12rpx 28rpx rgba(207,100,96,.22); color: #fff; font-size: 29rpx; line-height: 82rpx; }
-.profile-setup-button::after { border: 0; }
 
 .guest-heading {
   margin-top: 14rpx;
@@ -465,6 +433,39 @@ function goToProfileSetup() {
   line-height: 1.3;
   color: #69584c;
 }
+
+.profile-guide {
+  max-width: 350rpx;
+}
+
+.profile-guide-title {
+  margin-top: 24rpx;
+  color: var(--love-color-primary);
+  font-size: 42rpx;
+  font-weight: 600;
+  line-height: 1.28;
+}
+
+.profile-guide-copy {
+  margin-top: 18rpx;
+  color: #8e786b;
+  font-size: 23rpx;
+  line-height: 1.55;
+}
+
+.profile-guide-button {
+  height: 58rpx;
+  margin: 22rpx 0 0;
+  padding: 0 24rpx;
+  border: 2rpx solid #df7772;
+  border-radius: 30rpx;
+  background: rgba(255, 252, 248, 0.5);
+  color: #d87570;
+  font-size: 23rpx;
+  line-height: 56rpx;
+}
+
+.profile-guide-button::after { border: 0; }
 
 /* 插画区 */
 .hero-illustration {
@@ -625,7 +626,7 @@ function goToProfileSetup() {
   color: var(--love-color-text-secondary);
 }
 
-/* 已登录但暂无纪念日 */
+/* 暂无纪念日 */
 .empty-anniversary-card {
   display: flex;
   height: 270rpx;

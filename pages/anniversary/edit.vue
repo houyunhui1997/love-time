@@ -395,8 +395,7 @@ async function onSave() {
       repeatType: form.repeatType,
       reminderOffsetDays: form.reminderOffsetDays,
       note: form.note.trim(),
-      pinned: form.pinned,
-      visibility: 'private' as const
+      pinned: form.pinned
     }
 
     if (isEdit.value) {

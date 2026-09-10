@@ -3,7 +3,6 @@
   "description": "时光轴记录",
   "required": [
     "creatorUid",
-    "visibility",
     "title",
     "titleCustomized",
     "content",
@@ -26,8 +25,6 @@
   "properties": {
     "_id": { "description": "系统主键" },
     "creatorUid": { "bsonType": "string" },
-    "coupleId": { "bsonType": ["string", "null"] },
-    "visibility": { "bsonType": "string", "enum": ["private", "couple"] },
     "title": { "bsonType": "string", "minLength": 1, "maxLength": 30 },
     "titleCustomized": { "bsonType": "bool" },
     "content": { "bsonType": "string", "minLength": 1, "maxLength": 2000 },

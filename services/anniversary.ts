@@ -1,5 +1,5 @@
 import type { ApiResult, CursorPage } from '@/types/api'
-import type { Anniversary, AnniversaryType, AnniversaryRepeat, Visibility } from '@/types/domain'
+import type { AnniversaryType, AnniversaryRepeat } from '@/types/domain'
 import { createCloudObject } from './cloud'
 
 export interface AnniversaryListItem {
@@ -12,7 +12,6 @@ export interface AnniversaryListItem {
   reminderTime: string
   note: string
   pinned: boolean
-  visibility: Visibility
   source: 'user' | 'love-profile'
   revision: number
 }
@@ -33,7 +32,6 @@ export interface CreateAnniversaryParams {
   reminderOffsetDays: number[]
   note: string
   pinned: boolean
-  visibility: Visibility
 }
 
 export interface UpdateAnniversaryParams extends Partial<CreateAnniversaryParams> {

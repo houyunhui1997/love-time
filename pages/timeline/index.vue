@@ -4,96 +4,113 @@
       <text class="nav-title">恋爱时光轴</text>
     </view>
 
-    <view class="month-row">
-      <view class="month-selector" @tap="openMonthPicker">
-        <text class="month-text">{{ selectedMonthLabel }}</text>
-        <uni-icons type="down" size="15" color="#9b887b" />
-      </view>
+    <!-- 静默连接失败时允许用户主动重试 -->
+    <view v-if="sessionError" class="guest-home">
+      <image
+        class="guest-hero-art"
+        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-hero-memory-book.png"
+        mode="aspectFit"
+      />
+      <text class="guest-heading">暂时无法连接服务</text>
+      <text class="guest-subtitle">请检查网络后重试，你的记录都会保存在服务器</text>
+      <button class="guest-login-button" @tap="retrySession">
+        <text>重新连接</text>
+      </button>
     </view>
 
-    <scroll-view
-      class="timeline-scroll"
-      scroll-y
-      :show-scrollbar="false"
-      enhanced
-      @scrolltolower="loadMore"
-    >
-      <view v-if="timelineItems.length" class="timeline-list">
-        <view
-          v-for="(item, index) in timelineItems"
-          :key="item._id"
-          class="timeline-item"
-          :class="{ 'last-item': index === timelineItems.length - 1 }"
-        >
-          <view class="date-column">
-            <text v-if="item.isToday" class="today-label">今天</text>
-            <text class="day-number">{{ item.day }}</text>
-            <text class="month-name">{{ item.monthName }}</text>
-          </view>
+    <template v-else>
+      <view class="month-row">
+        <view class="month-selector" @tap="openMonthPicker">
+          <text class="month-text">{{ selectedMonthLabel }}</text>
+          <uni-icons type="down" size="15" color="#9b887b" />
+        </view>
+      </view>
 
-          <view class="timeline-rail">
-            <view class="rail-dot" />
-            <view class="rail-line" />
-          </view>
-
+      <scroll-view
+        class="timeline-scroll"
+        scroll-y
+        :show-scrollbar="false"
+        enhanced
+        @scrolltolower="loadMore"
+      >
+        <view v-if="timelineItems.length" class="timeline-list">
           <view
-            class="moment-card"
-            :class="{
-              'has-media': item.images.length > 0,
-              'single-media': item.images.length === 1,
-              'multiple-media': item.images.length > 1
-            }"
-            @tap="goToDetail(item._id)"
+            v-for="(item, index) in timelineItems"
+            :key="item._id"
+            class="timeline-item"
+            :class="{ 'last-item': index === timelineItems.length - 1 }"
           >
-            <view class="card-main">
-              <view class="card-copy">
-                <text class="card-content">{{ item.content }}</text>
-              </view>
+            <view class="date-column">
+              <text v-if="item.isToday" class="today-label">今天</text>
+              <text class="day-number">{{ item.day }}</text>
+              <text class="month-name">{{ item.monthName }}</text>
+            </view>
 
-              <view v-if="item.images.length" class="media-layout">
-                <image
-                  v-for="(imageUrl, imageIndex) in item.images.slice(0, 2)"
-                  :key="`${item._id}-${imageIndex}`"
-                  class="moment-image"
-                  :src="imageUrl"
-                  mode="aspectFill"
-                />
-                <view v-if="item.images.length > 2" class="media-count">
-                  <text>+{{ item.images.length - 2 }}</text>
+            <view class="timeline-rail">
+              <view class="rail-dot" />
+              <view class="rail-line" />
+            </view>
+
+            <view
+              class="moment-card"
+              :class="{
+                'has-media': item.images.length > 0,
+                'single-media': item.images.length === 1,
+                'multiple-media': item.images.length > 1
+              }"
+              @tap="goToDetail(item._id)"
+            >
+              <view class="card-main">
+                <view class="card-copy">
+                  <text class="card-content">{{ item.content }}</text>
+                </view>
+
+                <view v-if="item.images.length" class="media-layout">
+                  <image
+                    v-for="(imageUrl, imageIndex) in item.images.slice(0, 2)"
+                    :key="`${item._id}-${imageIndex}`"
+                    class="moment-image"
+                    :src="imageUrl"
+                    mode="aspectFill"
+                  />
+                  <view v-if="item.images.length > 2" class="media-count">
+                    <text>+{{ item.images.length - 2 }}</text>
+                  </view>
                 </view>
               </view>
-            </view>
 
-            <view class="card-meta">
-              <view class="mood-info">
-                <uni-icons type="heart-filled" size="14" :color="moodColor(item.mood)" />
-                <text>{{ moodLabel(item.mood) }}</text>
+              <view class="card-meta">
+                <view class="mood-info">
+                  <uni-icons type="heart-filled" size="14" :color="moodColor(item.mood)" />
+                  <text>{{ moodLabel(item.mood) }}</text>
+                </view>
+                <text class="meta-time">{{ item.time }}</text>
               </view>
-              <text class="meta-time">{{ item.time }}</text>
             </view>
           </view>
         </view>
-      </view>
 
-      <view v-else-if="empty && !loading" class="empty-state">
-        <view class="empty-heart">
-          <uni-icons type="heart-filled" size="31" color="#df8580" />
+        <view v-else-if="empty && !loading" class="empty-state">
+          <view class="empty-heart">
+            <uni-icons type="heart-filled" size="31" color="#df8580" />
+          </view>
+          <text class="empty-title">这个月还没有故事</text>
+          <text class="empty-copy">记录一段只属于你们的温柔时光</text>
+          <button class="empty-action" @tap="goToEdit">记录此刻</button>
         </view>
-        <text class="empty-title">这个月还没有故事</text>
-        <text class="empty-copy">记录一段只属于你们的温柔时光</text>
-        <button class="empty-action" @tap="goToEdit">记录此刻</button>
-      </view>
 
-      <view class="scroll-spacer" />
-    </scroll-view>
+        <view class="scroll-spacer" />
+      </scroll-view>
+    </template>
 
     <image
+      v-if="!sessionError"
       class="bottom-bouquet"
       src="/static/timeline/timeline-bottom-bouquet.png"
       mode="aspectFit"
     />
 
-    <view class="record-action" @tap="goToEdit">
+    <view v-if="!sessionError" class="record-action" @tap="goToEdit">
       <view class="record-button">
         <uni-icons type="compose" size="31" color="#ffffff" />
       </view>
@@ -144,6 +161,7 @@ import LoveLoading from '@/components/base/LoveLoading.vue'
 import { getMomentMoodColor, getMomentMoodOption } from '@/constants/moment-moods'
 import { listMoments, type MomentListItem } from '@/services/moment'
 import { getTempFileUrls } from '@/services/media'
+import { restoreWeixinSession } from '@/services/auth'
 import type { MomentMood } from '@/types/domain'
 
 interface TimelineItem {
@@ -187,6 +205,7 @@ const monthPickerSelection = ref<number[]>([0, now.getMonth()])
 const loading = ref(false)
 const loadingMore = ref(false)
 const empty = ref(false)
+const sessionError = ref(false)
 const nextCursor = ref<string | null>(null)
 const hasMore = ref(false)
 const timelineItems = ref<TimelineItem[]>([])
@@ -325,9 +344,27 @@ function goToEdit() {
   uni.navigateTo({ url: '/pages/timeline/edit' })
 }
 
-onShow(() => {
-  void loadData()
+onShow(async () => {
+  loading.value = true
+  sessionError.value = !(await restoreWeixinSession())
+  if (sessionError.value) {
+    timelineItems.value = []
+    empty.value = false
+    loading.value = false
+    return
+  }
+  await loadData()
 })
+
+async function retrySession() {
+  loading.value = true
+  sessionError.value = !(await restoreWeixinSession())
+  if (sessionError.value) {
+    loading.value = false
+    return
+  }
+  await loadData()
+}
 </script>
 
 <style scoped lang="scss">
@@ -356,7 +393,8 @@ onShow(() => {
 
 .nav-bar,
 .month-row,
-.timeline-scroll {
+.timeline-scroll,
+.guest-home {
   position: relative;
   z-index: 2;
 }
@@ -376,6 +414,62 @@ onShow(() => {
   line-height: var(--menu-height);
   letter-spacing: 1rpx;
   white-space: nowrap;
+}
+
+/* 服务连接失败状态 */
+.guest-home {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 38rpx;
+}
+
+.guest-hero-art {
+  width: 510rpx;
+  height: 442rpx;
+}
+
+.guest-heading {
+  display: block;
+  margin-top: 14rpx;
+  color: #5b493e;
+  font-size: 34rpx;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.guest-subtitle {
+  display: block;
+  max-width: 540rpx;
+  margin-top: 20rpx;
+  color: #987f70;
+  font-size: 24rpx;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.guest-login-button {
+  display: flex;
+  width: 440rpx;
+  height: 86rpx;
+  align-items: center;
+  justify-content: center;
+  gap: 14rpx;
+  margin-top: 38rpx;
+  padding: 0;
+  border-radius: 44rpx;
+  background: linear-gradient(135deg, #ea817b 0%, #da6968 100%);
+  box-shadow: 0 12rpx 28rpx rgba(207, 100, 96, 0.22);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 500;
+  line-height: 86rpx;
+
+  &::after {
+    border: 0;
+  }
 }
 
 .month-row {

@@ -4,22 +4,34 @@
       <view class="nav-back" @tap="goBack">
         <uni-icons type="left" size="28" color="#514238" />
       </view>
-      <text class="nav-title">空间资料</text>
+      <text class="nav-title">{{ isEditing ? '恋爱资料' : '建立恋爱档案' }}</text>
     </view>
 
     <view class="intro">
-      <text class="intro-title">装点属于你们的空间</text>
-      <text class="intro-copy">另一半的姓名和头像将在加入空间后自动获取</text>
+      <text class="intro-title">记录属于你们的开始</text>
+      <text class="intro-copy">这份档案只属于你，由你决定记录哪些内容</text>
     </view>
 
     <view class="form-card">
       <view class="form-row">
-        <text class="form-label">空间名称</text>
+        <text class="form-label">我的称呼</text>
         <input
-          v-model="form.spaceName"
+          v-model="form.selfName"
           class="form-input"
-          maxlength="20"
-          placeholder="请输入空间名称"
+          maxlength="12"
+          placeholder="请输入你的称呼"
+          placeholder-class="input-placeholder"
+        />
+      </view>
+      <view class="divider" />
+
+      <view class="form-row">
+        <text class="form-label">对方称呼</text>
+        <input
+          v-model="form.partnerName"
+          class="form-input"
+          maxlength="12"
+          placeholder="请输入对方称呼"
           placeholder-class="input-placeholder"
         />
       </view>
@@ -33,14 +45,26 @@
           </view>
         </view>
       </picker>
+      <view class="divider" />
+
+      <view class="avatar-row">
+        <view class="avatar-copy">
+          <text class="form-label">对方头像</text>
+          <text class="avatar-tip">选填，之后也可以修改</text>
+        </view>
+        <button class="partner-avatar" open-type="chooseAvatar" @chooseavatar="onChoosePartnerAvatar">
+          <image v-if="partnerAvatarPreview" :src="partnerAvatarPreview" class="partner-avatar-image" mode="aspectFill" />
+          <uni-icons v-else type="camera-filled" size="26" color="#d87873" />
+        </button>
+      </view>
     </view>
 
     <button class="save-button" :disabled="saving || loading" @tap="saveProfile">
       <LoveLoading v-if="saving" size="mini" text="" :mask="false" />
-      <text>{{ saving ? '保存中…' : '保存空间资料' }}</text>
+      <text>{{ saving ? '保存中…' : isEditing ? '保存修改' : '建立恋爱档案' }}</text>
     </button>
-    <text class="privacy-tip">空间成员资料均来自各自的真实登录账号</text>
-    <LoveLoading :visible="loading" fullscreen text="正在读取空间资料" />
+    <text class="privacy-tip">资料仅用于你的私人恋爱档案</text>
+    <LoveLoading :visible="loading" fullscreen text="正在读取资料" />
   </view>
 </template>
 
@@ -48,14 +72,16 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import { formatBusinessDate } from '@/utils/date'
-import { getMyLoveProfile, saveMyLoveProfile } from '@/services/profile'
+import { getMyAccountProfile, getMyLoveProfile, saveMyLoveProfile } from '@/services/profile'
 
 const props = withDefaults(defineProps<{ mode?: 'create' | 'edit' }>(), { mode: 'create' })
 const today = formatBusinessDate(new Date())
 const loading = ref(true)
 const saving = ref(false)
-const revision = ref(1)
-const form = reactive({ spaceName: '', loveStartDate: '' })
+const existingProfile = ref(false)
+const partnerAvatarTempPath = ref('')
+const partnerAvatarFileId = ref<string | null>(null)
+const form = reactive({ selfName: '', partnerName: '', loveStartDate: '' })
 
 const systemInfo = uni.getSystemInfoSync()
 const fallbackTop = Number(systemInfo.statusBarHeight || 20) + 6
@@ -71,18 +97,24 @@ try {
   // 非微信环境使用回退尺寸。
 }
 const pageStyle = { '--menu-top': `${menuTop}px`, '--menu-height': `${menuHeight}px` }
+const isEditing = computed(() => props.mode === 'edit' || existingProfile.value)
 const displayStartDate = computed(() => form.loveStartDate ? form.loveStartDate.replace(/-/g, '.') : '请选择日期')
+const partnerAvatarPreview = computed(() => partnerAvatarTempPath.value || partnerAvatarFileId.value || '')
 
 onMounted(async () => {
   try {
-    const profile = await getMyLoveProfile()
+    const [account, profile] = await Promise.all([getMyAccountProfile(), getMyLoveProfile()])
     if (profile) {
-      form.spaceName = profile.spaceName
+      existingProfile.value = true
+      form.selfName = profile.selfName
+      form.partnerName = profile.partnerName
       form.loveStartDate = profile.loveStartDate
-      revision.value = profile.revision
+      partnerAvatarFileId.value = profile.partnerAvatarFileId
+    } else {
+      form.selfName = account.nickname.slice(0, 12)
     }
   } catch (error) {
-    uni.showToast({ title: error instanceof Error ? error.message : '空间资料读取失败', icon: 'none' })
+    uni.showToast({ title: error instanceof Error ? error.message : '资料读取失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -92,20 +124,37 @@ function onDateChange(event: any) {
   form.loveStartDate = event?.detail?.value || ''
 }
 
+function onChoosePartnerAvatar(event: any) {
+  partnerAvatarTempPath.value = event?.detail?.avatarUrl || ''
+}
+
+async function uploadPartnerAvatar(): Promise<string | null> {
+  if (!partnerAvatarTempPath.value) return partnerAvatarFileId.value
+  const extension = partnerAvatarTempPath.value.split('.').pop()?.toLowerCase() || 'jpg'
+  const result = await uniCloud.uploadFile({
+    filePath: partnerAvatarTempPath.value,
+    cloudPath: `partner/avatar/${Date.now()}.${extension}`
+  })
+  return result.fileID
+}
+
 async function saveProfile() {
-  const spaceName = form.spaceName.trim()
-  if (!spaceName) return uni.showToast({ title: '请输入空间名称', icon: 'none' })
+  const selfName = form.selfName.trim()
+  const partnerName = form.partnerName.trim()
+  if (!selfName) return uni.showToast({ title: '请输入你的称呼', icon: 'none' })
+  if (!partnerName) return uni.showToast({ title: '请输入对方称呼', icon: 'none' })
   if (!form.loveStartDate) return uni.showToast({ title: '请选择在一起日期', icon: 'none' })
   if (saving.value) return
   saving.value = true
   try {
-    const result = await saveMyLoveProfile({
-      spaceName,
+    const uploadedAvatar = await uploadPartnerAvatar()
+    await saveMyLoveProfile({
+      selfName,
+      partnerName,
       loveStartDate: form.loveStartDate,
-      revision: revision.value
+      partnerAvatarFileId: uploadedAvatar
     })
-    revision.value = result.revision
-    uni.showToast({ title: '保存成功', icon: 'success' })
+    uni.showToast({ title: existingProfile.value ? '修改成功' : '档案已建立', icon: 'success' })
     setTimeout(() => {
       if (props.mode === 'create') uni.switchTab({ url: '/pages/anniversary/index' })
       else uni.navigateBack()
@@ -137,13 +186,18 @@ function goBack() {
 .intro-title { color: #58463b; font-size: 34rpx; font-weight: 600; }
 .intro-copy { margin-top: 15rpx; color: #9b8578; font-size: 23rpx; }
 .form-card { padding: 0 30rpx; border: 1rpx solid rgba(255, 255, 255, .94); border-radius: 28rpx; background: rgba(252, 247, 241, .88); box-shadow: 0 14rpx 34rpx rgba(103, 73, 54, .09); }
-.form-row { display: flex; min-height: 104rpx; align-items: center; justify-content: space-between; }
+.form-row, .avatar-row { display: flex; min-height: 104rpx; align-items: center; justify-content: space-between; }
 .form-label { color: #59483e; font-size: 27rpx; font-weight: 600; }
 .form-input { width: 390rpx; color: #69574c; font-size: 27rpx; text-align: right; }
 .input-placeholder, .placeholder { color: #b3a39a; }
 .form-value-row { display: flex; align-items: center; gap: 10rpx; }
 .form-value { color: #69574c; font-size: 27rpx; }
 .divider { height: 1rpx; background: rgba(226, 211, 200, .7); }
+.avatar-copy { display: flex; flex-direction: column; gap: 10rpx; }
+.avatar-tip { color: #a18e82; font-size: 22rpx; }
+.partner-avatar { display: flex; width: 82rpx; height: 82rpx; align-items: center; justify-content: center; margin: 0; padding: 0; overflow: hidden; border: 1rpx solid rgba(223,190,176,.8); border-radius: 50%; background: #fffaf6; }
+.partner-avatar::after { border: 0; }
+.partner-avatar-image { width: 100%; height: 100%; }
 .save-button { display: flex; width: 470rpx; height: 82rpx; align-items: center; justify-content: center; margin: 54rpx auto 0; border: 0; border-radius: 42rpx; background: linear-gradient(135deg, #ea817b, #da6968); color: #fff; font-size: 29rpx; line-height: 82rpx; }
 .save-button::after { border: 0; }
 .save-button[disabled] { opacity: .72; }

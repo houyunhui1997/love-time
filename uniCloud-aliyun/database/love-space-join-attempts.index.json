@@ -1,3 +1,0 @@
-[
-  { "IndexName": "uid_created", "MgoKeySchema": { "MgoIndexKeys": [{ "Name": "uid", "Direction": "1" }, { "Name": "createdAt", "Direction": "-1" }], "MgoIsUnique": false } }
-]

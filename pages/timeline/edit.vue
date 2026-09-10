@@ -79,21 +79,6 @@
             </view>
           </view>
 
-          <view class="setting-row visibility-row">
-            <view class="setting-label visibility-label">
-              <uni-icons class="setting-icon" type="locked" size="20" color="#df7772" />
-              <view class="visibility-copy">
-                <text class="visibility-title">仅自己可见</text>
-                <text class="visibility-tip">关闭后，另一半也能看到</text>
-              </view>
-            </view>
-            <switch
-              class="visibility-switch"
-              :checked="form.visibility === 'private'"
-              color="#df716e"
-              @change="onVisibilityChange"
-            />
-          </view>
         </view>
 
         <button
@@ -163,7 +148,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import MomentMoodPicker from '@/components/timeline/MomentMoodPicker.vue'
 import { MOMENT_MOOD_GROUPS } from '@/constants/moment-moods'
-import type { MomentMood, Visibility } from '@/types/domain'
+import type { MomentMood } from '@/types/domain'
 import { createMoment, getMoment, updateMoment } from '@/services/moment'
 import { getTempFileUrls } from '@/services/media'
 
@@ -174,7 +159,6 @@ interface FormData {
   occurredAt: string
   occurredTime: string
   mood: MomentMood
-  visibility: Visibility
 }
 
 const systemInfo = uni.getSystemInfoSync()
@@ -210,8 +194,7 @@ const form = reactive<FormData>({
   images: [],
   occurredAt: '',
   occurredTime: '',
-  mood: 'warm',
-  visibility: 'private'
+  mood: 'warm'
 })
 
 const imageSource = ref<Array<{ type: 'file' | 'local'; value: string }>>([])
@@ -274,10 +257,6 @@ function selectExtendedMood(mood: MomentMood) {
   form.mood = mood
 }
 
-function onVisibilityChange(event: any) {
-  form.visibility = event.detail.value ? 'private' : 'couple'
-}
-
 function chooseImage() {
   const remain = 9 - form.images.length
   if (remain <= 0) return
@@ -322,7 +301,6 @@ onLoad(async (options) => {
     editRevision.value = data.revision || 1
     form.content = data.content
     form.mood = data.mood
-    form.visibility = data.visibility
     form.title = data.titleCustomized ? data.title : ''
 
     const occurred = new Date(data.occurredAt)
@@ -372,8 +350,7 @@ async function onSave() {
       content: form.content.trim(),
       mood: form.mood,
       occurredAt,
-      mediaIds,
-      visibility: form.visibility
+      mediaIds
     }
 
     if (isEdit.value) {
@@ -580,8 +557,7 @@ async function onSave() {
   justify-content: space-between;
 }
 
-.setting-row + .setting-row,
-.visibility-row {
+.setting-row + .setting-row {
   border-top: 1rpx solid rgba(222, 205, 192, 0.48);
 }
 
@@ -643,34 +619,6 @@ async function onSave() {
   background: linear-gradient(135deg, #ec817a, #dc696b);
   box-shadow: 0 7rpx 17rpx rgba(207, 96, 92, 0.18);
   color: #fff;
-}
-
-.visibility-label {
-  flex: 1;
-}
-
-.visibility-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 7rpx;
-}
-
-.visibility-title {
-  color: #59473d;
-  font-size: 27rpx;
-  font-weight: 600;
-}
-
-.visibility-tip {
-  color: #9a8679;
-  font-size: 21rpx;
-  font-weight: 400;
-}
-
-.visibility-switch {
-  flex: 0 0 auto;
-  transform: scale(0.82);
-  transform-origin: right center;
 }
 
 .save-button {

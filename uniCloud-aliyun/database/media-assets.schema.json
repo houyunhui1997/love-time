@@ -12,7 +12,6 @@
   "properties": {
     "_id": { "description": "系统主键" },
     "ownerUid": { "bsonType": "string" },
-    "coupleId": { "bsonType": ["string", "null"] },
     "fileId": { "bsonType": "string" },
     "thumbFileId": { "bsonType": ["string", "null"] },
     "mimeType": { "bsonType": "string", "enum": ["image/jpeg", "image/png", "image/webp"] },
@@ -24,4 +23,3 @@
     "expiresAt": { "bsonType": ["long", "null"] }
   }
 }
-

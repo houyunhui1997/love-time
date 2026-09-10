@@ -1,13 +1,11 @@
-export type Visibility = 'private' | 'couple'
 export type RecordStatus = 'active' | 'deleted'
 
 export interface LoveProfile {
   _id: string
   ownerUid: string
-  coupleId: string | null
   selfName: string
   partnerName: string
-  selfGender: 'male' | 'female'
+  selfGender: 'male' | 'female' | null
   selfAvatarFileId: string | null
   partnerAvatarFileId: string | null
   loveStartDate: string
@@ -23,8 +21,6 @@ export type AnniversaryRepeat = 'none' | 'yearly'
 export interface Anniversary {
   _id: string
   creatorUid: string
-  coupleId: string | null
-  visibility: Visibility
   title: string
   eventType: AnniversaryType
   targetDate: string
@@ -72,8 +68,6 @@ export type MomentMood =
 export interface Moment {
   _id: string
   creatorUid: string
-  coupleId: string | null
-  visibility: Visibility
   title: string
   titleCustomized: boolean
   content: string

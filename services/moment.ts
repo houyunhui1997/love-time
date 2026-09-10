@@ -1,5 +1,5 @@
 import type { ApiResult, CursorPage } from '@/types/api'
-import type { MomentMood, Visibility } from '@/types/domain'
+import type { MomentMood } from '@/types/domain'
 import { createCloudObject } from './cloud'
 
 export interface MomentListItem {
@@ -11,7 +11,6 @@ export interface MomentListItem {
   occurredAt: number
   occurredMonth: string
   mediaIds: string[]
-  visibility: Visibility
   createdAt: number
   revision: number
 }
@@ -30,7 +29,6 @@ export interface CreateMomentParams {
   mood: MomentMood
   occurredAt: number
   mediaIds: string[]
-  visibility: Visibility
 }
 
 export interface UpdateMomentParams extends Partial<CreateMomentParams> {
