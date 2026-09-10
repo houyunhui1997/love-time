@@ -64,7 +64,7 @@
 
         <view class="page-signature">
           <view class="signature-line"><view class="signature-rule" /><text class="signature-copy">慢慢记录，长长相伴</text><view class="signature-rule" /></view>
-          <image class="signature-sprig" src="/static/profile/companion/botanical-sprig.png" mode="aspectFit" />
+          <!-- <image class="signature-sprig" src="/static/profile/companion/botanical-sprig.png" mode="aspectFit" /> -->
         </view>
       </template>
 
