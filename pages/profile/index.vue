@@ -1,77 +1,68 @@
 <template>
   <view class="profile-page" :style="pageStyle">
-    <view class="page-header">
-      <text class="page-title">我的</text>
-      <text class="eyebrow">LOVE TIME</text>
-    </view>
-
-    <view v-if="isLoggedIn" class="identity-card">
-      <image v-if="accountAvatar" class="account-avatar" :src="accountAvatar" mode="aspectFill" />
-      <view v-else class="account-avatar avatar-fallback">
-        <uni-icons type="person-filled" size="30" color="#d77873" />
+    <view class="profile-header">
+      <image class="header-sprig header-sprig-left" src="/static/profile/companion/botanical-sprig.png" mode="aspectFit" />
+      <image class="header-sprig header-sprig-right" src="/static/profile/companion/botanical-sprig.png" mode="aspectFit" />
+      <view class="page-header">
+        <!-- <text class="page-title">我的</text>
+        <text class="eyebrow">LOVE TIME</text> -->
       </view>
-      <view class="identity-copy">
+      <view v-if="isLoggedIn" class="identity">
+        <button class="avatar-button" aria-label="编辑头像和恋爱资料" @tap="openProfileDialog">
+          <image class="account-avatar" :src="accountAvatar" mode="aspectFill" @error="avatarFailed = true" />
+        </button>
         <text class="identity-name">{{ accountName }}</text>
-        <text class="identity-status">已安全连接 · 数据保存至服务器</text>
+        <text class="identity-status">{{ profile ? '已完善资料' : '已临时登录' }}</text>
       </view>
-      <view class="identity-badge">
-        <uni-icons type="heart-filled" size="16" color="#d87974" />
-      </view>
-    </view>
-
-    <view v-if="isLoggedIn && profile" class="archive-card" @tap="openProfileDialog">
-      <image class="archive-art" src="/static/profile/love-archive-clean.jpg" mode="aspectFill" />
-      <text class="archive-heading">我们的恋爱档案</text>
-      <text class="self-name">{{ accountName }}</text>
-      <text v-if="profile.partnerName" class="partner-name">{{ profile.partnerName }}</text>
-      <view class="days-copy">
-        <text class="together-label">在一起</text>
-        <view class="days-line">
-          <text class="days-number">{{ togetherDays }}</text>
-          <text class="days-unit">天</text>
-        </view>
-        <text class="start-date">始于 {{ displayStartDate }}</text>
+      <view v-else class="identity identity-offline">
+        <image class="offline-emblem" src="/static/profile/companion/heart-emblem.png" mode="aspectFit" />
+        <text class="identity-name">恋时光</text>
       </view>
     </view>
 
-    <view v-else-if="isLoggedIn" class="profile-incomplete-card">
-      <text class="profile-incomplete-title">恋爱资料可以以后再填</text>
-      <text class="profile-incomplete-copy">补充头像、昵称和在一起日期；对方称呼选填，不完善也不影响记录。</text>
-      <button class="profile-incomplete-button" @tap="openProfileDialog">登录</button>
-    </view>
-
-    <view v-else class="guest-home">
-      <image
-        class="guest-hero-art"
-        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/home/empty-hero-memory-book.png"
-        mode="aspectFit"
-      />
-      <text class="guest-heading">暂时无法连接服务</text>
-      <text class="guest-copy">请检查网络后重试，你的记录都会保存在服务器</text>
-      <button class="guest-login-button" @tap="loadProfilePage">
-        <text>重新连接</text>
-      </button>
-    </view>
-
-    <template v-if="isLoggedIn">
-      <view v-for="(group, groupIndex) in menuGroups" :key="groupIndex" class="menu-group">
-        <view
-          v-for="(item, index) in group"
-          :key="item.label"
-          class="menu-row"
-          :class="{ divided: index > 0 }"
-          @tap="openMenu(item.label)"
-        >
-          <view class="menu-icon" :class="{ muted: groupIndex === 1 }">
-            <uni-icons :type="item.icon" size="21" :color="groupIndex === 0 ? '#d77873' : '#9c897c'" />
+    <view class="page-content">
+      <template v-if="isLoggedIn">
+        <view class="archive-card" :class="{ 'has-profile': profile }">
+          <image class="archive-emblem" src="/static/profile/companion/heart-emblem.png" mode="aspectFit" />
+          <view class="archive-content">
+            <text class="archive-title">我们的恋爱档案</text>
+            <template v-if="profile">
+              <view class="days-line"><text class="days-label">已经相伴</text><text class="days-number">{{ togetherDays }}</text><text class="days-unit">天</text></view>
+              <text class="archive-subtitle">始于 {{ displayStartDate }}</text>
+              <text v-if="profile.partnerName" class="partner-name">与 {{ profile.partnerName }} 慢慢相伴</text>
+            </template>
+            <text v-else class="archive-subtitle">补充资料，开启专属记录</text>
+            <button class="profile-button" @tap="openProfileDialog">
+              <text>{{ profile ? '编辑资料' : '完善资料' }}</text>
+              <uni-icons type="right" size="18" color="#fffaf5" />
+            </button>
+            <text v-if="!profile" class="archive-note">稍后填写也可以</text>
           </view>
-          <text class="menu-label">{{ item.label }}</text>
-          <text v-if="item.caption" class="menu-caption">{{ item.caption }}</text>
-          <uni-icons class="row-arrow" type="right" size="17" color="#b7aaa1" />
         </view>
-      </view>
-    </template>
 
+        <view class="settings-list">
+          <view v-for="(group, groupIndex) in menuGroups" :key="groupIndex" class="menu-group">
+            <view v-for="item in group" :key="item.label" class="menu-row" hover-class="menu-row-pressed" @tap="openMenu(item.label)">
+              <view class="menu-icon"><uni-icons :type="item.icon" size="27" color="#df8176" /></view>
+              <text class="menu-label">{{ item.label }}</text>
+              <text v-if="item.caption" class="menu-caption">{{ item.caption }}</text>
+              <uni-icons class="row-arrow" type="right" size="19" color="#ae9788" />
+            </view>
+          </view>
+        </view>
+
+        <view class="page-signature">
+          <view class="signature-line"><view class="signature-rule" /><text class="signature-copy">慢慢记录，长长相伴</text><view class="signature-rule" /></view>
+          <image class="signature-sprig" src="/static/profile/companion/botanical-sprig.png" mode="aspectFit" />
+        </view>
+      </template>
+
+      <view v-else class="guest-home">
+        <text class="guest-heading">暂时无法连接服务</text>
+        <text class="guest-copy">请检查网络后重试，你的记录都会保存在服务器</text>
+        <button class="guest-login-button" @tap="loadProfilePage">重新连接</button>
+      </view>
+    </view>
     <LoveLoginDialog v-model="showProfileDialog" @success="onProfileSaved" />
   </view>
 </template>
@@ -143,7 +134,8 @@ const routeByMenu: Record<string, string> = {
 
 const today = formatBusinessDate(new Date())
 const accountName = computed(() => account.value?.nickname || '恋时光用户')
-const accountAvatar = computed(() => account.value?.avatarFileId || '')
+const avatarFailed = ref(false)
+const accountAvatar = computed(() => !avatarFailed.value && account.value?.avatarFileId || '/static/profile/companion/default-avatar.png')
 const togetherDays = computed(() => profile.value ? Math.max(0, differenceInCalendarDays(today, profile.value.loveStartDate)) : 0)
 const displayStartDate = computed(() => profile.value?.loveStartDate.replace(/-/g, '.') || '')
 
@@ -162,6 +154,7 @@ async function loadProfilePage() {
       getMyAccountProfile(),
       getMyLoveProfile()
     ])
+    avatarFailed.value = false
     account.value = accountResult
     profile.value = profileResult
   } catch (error) {
@@ -175,6 +168,7 @@ function openProfileDialog() {
 }
 
 function onProfileSaved(result: CompleteProfileResult) {
+  avatarFailed.value = false
   account.value = result.account
   profile.value = result.profile
 }
@@ -194,155 +188,112 @@ function openMenu(label: string) {
 .profile-page {
   box-sizing: border-box;
   min-height: 100vh;
-  padding: 0 36rpx calc(env(safe-area-inset-bottom) + 38rpx);
-  background-color: #fbf4ed;
-  background-image: linear-gradient(180deg, #f5ddd5 0%, #f9ebe3 18%, #fbf4ed 46%, #fcf8f3 100%);
-  color: #55433a;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16rpx);
+  color: #554238;
+  background: #fcf7f1 url('/static/profile/companion/paper-texture.jpg') repeat;
+  background-size: 256rpx 256rpx;
 }
-
-.page-header {
-  display: flex;
-  box-sizing: border-box;
-  height: calc(var(--menu-top) + var(--menu-height));
-  align-items: center;
-  gap: 14rpx;
-  padding-top: var(--menu-top);
-  padding-right: 210rpx;
+.profile-header { position: relative; overflow: hidden; padding-bottom: 38rpx; border-radius: 0 0 50% 50% / 0 0 12% 12%; background: #f9e8df; }
+.header-background { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.page-header { position: relative; display: flex; box-sizing: border-box; height: calc(var(--menu-top) + var(--menu-height)); align-items: center; gap: 18rpx; padding: var(--menu-top) 210rpx 0 40rpx; }
+.page-title { color: #503d32; font-size: 38rpx; font-weight: 650; line-height: var(--menu-height); white-space: nowrap; }
+.eyebrow { color: #d77d73; font-size: 18rpx; font-weight: 500; letter-spacing: 4rpx; white-space: nowrap; }
+.identity { position: relative; display: flex; flex-direction: column; align-items: center; padding: 24rpx 36rpx 0; }
+.avatar-button { width: 208rpx; height: 208rpx; flex-shrink: 0; margin: 0; padding: 0; overflow: hidden; border: 6rpx solid #fffcf7; border-radius: 50%; background: #e2dfc6; box-shadow: 0 7rpx 16rpx rgba(124, 93, 66, .14); line-height: 1; }
+.avatar-button::after { border: 0; }
+.account-avatar { display: block; width: 100%; height: 100%; }
+.identity-name { display: block; max-width: 80%; margin-top: 18rpx; overflow: hidden; color: #503d32; font-size: 34rpx; font-weight: 600; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.identity-status { margin-top: 8rpx; color: #a28c7c; font-size: 25rpx; line-height: 1.5; }
+.page-content { padding: 0 34rpx; }
+.archive-card { position: relative; box-sizing: border-box; min-height: 286rpx; margin-top: 28rpx; overflow: hidden; padding: 32rpx 36rpx 28rpx; border-radius: 30rpx; background: rgba(242, 231, 216, .35); }
+.archive-emblem { position: absolute; top: 44rpx; right: 18rpx; width: 292rpx; height: 208rpx; pointer-events: none; }
+.archive-content { position: relative; z-index: 1; }
+.archive-title { display: block; color: #554031; font-size: 33rpx; font-weight: 600; line-height: 1.45; }
+.archive-subtitle { display: block; max-width: 64%; margin-top: 12rpx; color: #a18b79; font-size: 24rpx; line-height: 1.55; }
+.profile-button { display: flex; box-sizing: border-box; width: 260rpx; height: 72rpx; align-items: center; justify-content: center; gap: 16rpx; margin: 20rpx 0 0; padding: 0 12rpx; border: 0; border-radius: 40rpx; background: #e47d74; color: #fffaf5; font-size: 28rpx; font-weight: 500; line-height: 1.3; }
+.profile-button::after { border: 0; }
+.profile-button:active { opacity: .85; }
+.archive-note { display: block; margin-top: 14rpx; color: #a38b79; font-size: 22rpx; line-height: 1.5; }
+.has-profile { min-height: 328rpx; }
+.has-profile .archive-emblem { top: 60rpx; }
+.days-line { display: flex; align-items: baseline; gap: 8rpx; margin-top: 12rpx; }
+.days-label, .days-unit { color: #9c8472; font-size: 22rpx; }
+.days-number { max-width: 210rpx; overflow: hidden; color: #d87973; font-family: Georgia, 'Times New Roman', serif; font-size: 48rpx; line-height: 1.1; }
+.has-profile .archive-subtitle { margin-top: 8rpx; font-size: 21rpx; }
+.partner-name { display: block; max-width: 62%; margin-top: 6rpx; overflow: hidden; color: #9e8777; font-size: 21rpx; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.settings-list { margin-top: 26rpx; }
+.menu-row { display: flex; min-height: 132rpx; align-items: center; gap: 18rpx; border-bottom: 1rpx solid #f0e6dc; }
+.menu-group:last-child .menu-row:last-child { border-bottom: 0; }
+.menu-row-pressed { opacity: .65; }
+.menu-icon { display: flex; width: 58rpx; flex: 0 0 58rpx; align-items: center; justify-content: center; }
+.menu-label { color: #634d3d; font-size: 28rpx; white-space: nowrap; }
+.menu-caption { margin-left: auto; color: #aa9483; font-size: 21rpx; text-align: right; }
+.row-arrow { flex-shrink: 0; }
+.menu-label + .row-arrow { margin-left: auto; }
+.page-signature { position: relative; display: flex; min-height: 176rpx; align-items: center; justify-content: center; margin: 0 -34rpx; overflow: hidden; }
+.signature-line { position: relative; z-index: 1; display: flex; align-items: center; gap: 14rpx; }
+.signature-rule { width: 36rpx; height: 1rpx; background: #dbb5a1; }
+.signature-copy { color: #a58c77; font-size: 22rpx; letter-spacing: 2rpx; }
+.signature-sprig { position: absolute; right: 0; bottom: 0; width: 126rpx; height: 182rpx; pointer-events: none; }
+.offline-emblem { width: 270rpx; height: 166rpx; }
+.guest-home { display: flex; flex-direction: column; align-items: center; padding: 56rpx 20rpx; }
+.guest-heading { font-size: 32rpx; color: #5b493e; }
+.guest-copy { max-width: 520rpx; margin-top: 18rpx; color: #987f70; font-size: 24rpx; line-height: 1.7; text-align: center; }
+.guest-login-button { width: 420rpx; margin-top: 38rpx; border-radius: 44rpx; background: #e47c75; color: #fffaf5; font-size: 28rpx; }
+.guest-login-button::after { border: 0; }
+@media screen and (max-width: 350px) {
+  .page-content { padding-right: 28rpx; padding-left: 28rpx; }
+  .menu-row { gap: 12rpx; }
+  .menu-label { font-size: 27rpx; }
+  .menu-caption { font-size: 20rpx; }
+  .archive-title { font-size: 32rpx; }
+  .archive-subtitle { font-size: 22rpx; }
 }
-
-.eyebrow { color: #d47a73; font-size: 17rpx; font-weight: 600; letter-spacing: 3rpx; line-height: 1; white-space: nowrap; }
-.page-title { color: #4f3d34; font-size: 37rpx; font-weight: 650; line-height: var(--menu-height); white-space: nowrap; }
-
-.identity-card {
-  display: flex;
-  box-sizing: border-box;
-  min-height: 124rpx;
-  align-items: center;
-  margin-top: 24rpx;
-  padding: 18rpx 24rpx;
-  border: 1rpx solid rgba(255, 255, 255, 0.9);
-  border-radius: 26rpx;
-  background: rgba(252, 247, 241, 0.9);
-  box-shadow: 0 12rpx 30rpx rgba(104, 72, 54, 0.08), inset 0 1rpx 0 rgba(255, 255, 255, 0.86);
-}
-
-.account-avatar,
-.avatar-fallback {
-  width: 86rpx;
-  height: 86rpx;
-  flex: 0 0 86rpx;
-  overflow: hidden;
-  border: 4rpx solid #fffdf9;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2rpx rgba(220, 123, 116, 0.32);
-}
-
-.avatar-fallback { display: flex; align-items: center; justify-content: center; background: #f8e8df; }
-.identity-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; margin-left: 22rpx; }
-.identity-name { overflow: hidden; color: #503d33; font-size: 30rpx; font-weight: 600; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
-.identity-status { margin-top: 7rpx; color: #a08a7d; font-size: 21rpx; }
-.identity-badge { display: flex; width: 48rpx; height: 48rpx; align-items: center; justify-content: center; border-radius: 50%; background: #fae9e2; }
-
-.archive-card {
-  position: relative;
-  height: 386rpx;
-  margin-top: 22rpx;
-  overflow: hidden;
-  border: 1rpx solid rgba(255, 255, 255, 0.92);
-  border-radius: 28rpx;
-  background: #fcf7f1;
-  box-shadow: 0 14rpx 34rpx rgba(103, 73, 54, 0.09), inset 0 1rpx 0 rgba(255, 255, 255, 0.9);
-}
-
-.archive-art { position: absolute; inset: 0; width: 100%; height: 100%; }
-.archive-heading { position: absolute; top: 28rpx; right: 0; left: 0; z-index: 2; color: #4d3b31; font-size: 27rpx; font-weight: 600; text-align: center; }
-.self-name,
-.partner-name { position: absolute; top: 254rpx; z-index: 2; width: 150rpx; color: #6f5a4d; font-size: 22rpx; text-align: center; }
-.self-name { left: 26rpx; }
-.partner-name { right: 26rpx; }
-.days-copy { position: absolute; right: 0; bottom: 24rpx; left: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; }
-.together-label { font-size: 21rpx; }
-.days-line { display: flex; align-items: baseline; margin-top: 2rpx; }
-.days-number { color: #d77873; font-family: Georgia, 'Times New Roman', serif; font-size: 62rpx; line-height: 0.92; }
-.days-unit { margin-left: 6rpx; font-size: 22rpx; }
-.start-date { margin-top: 9rpx; color: #95857a; font-size: 20rpx; }
-
-.profile-incomplete-card { margin-top: 24rpx; padding: 38rpx 30rpx; border: 1rpx solid rgba(255, 255, 255, 0.9); border-radius: 28rpx; background: rgba(252, 247, 241, 0.9); box-shadow: 0 12rpx 30rpx rgba(103, 73, 54, 0.08); text-align: center; }
-.profile-incomplete-title { display: block; color: #554238; font-size: 30rpx; font-weight: 600; }
-.profile-incomplete-copy { display: block; margin-top: 12rpx; color: #99877c; font-size: 22rpx; line-height: 1.55; }
-.profile-incomplete-button { display: flex; width: 330rpx; height: 72rpx; align-items: center; justify-content: center; margin: 26rpx auto 0; padding: 0; border: 0; border-radius: 36rpx; background: #df7772; color: #fff; font-size: 26rpx; line-height: 72rpx; }
-.profile-incomplete-button::after { border: 0; }
-
-/* 服务连接失败状态（与首页一致） */
-.guest-home {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 30rpx;
-}
-
-.guest-hero-art { width: 510rpx; height: 442rpx; }
-
-.guest-heading {
-  display: block;
-  margin-top: 14rpx;
-  color: #5b493e;
-  font-size: 34rpx;
-  font-weight: 500;
-  line-height: 1.45;
-  text-align: center;
-}
-
-.guest-copy {
-  display: block;
-  max-width: 520rpx;
-  margin-top: 18rpx;
-  color: #987f70;
-  font-size: 24rpx;
-  line-height: 1.55;
-  text-align: center;
-}
-
-.guest-login-button {
-  display: flex;
-  width: 440rpx;
-  height: 86rpx;
-  align-items: center;
-  justify-content: center;
-  gap: 14rpx;
-  margin-top: 38rpx;
-  padding: 0;
-  border-radius: 44rpx;
-  background: linear-gradient(135deg, #ea817b 0%, #da6968 100%);
-  box-shadow: 0 12rpx 28rpx rgba(207, 100, 96, 0.22);
-  color: #fff;
-  font-size: 30rpx;
-  font-weight: 500;
-  line-height: 86rpx;
-
-  &::after { border: 0; }
-}
-
-.menu-group { margin-top: 26rpx; padding: 0 24rpx; border: 1rpx solid rgba(255, 255, 255, 0.9); border-radius: 26rpx; background: rgba(252, 247, 241, 0.9); box-shadow: 0 10rpx 28rpx rgba(103, 73, 54, 0.07), inset 0 1rpx 0 rgba(255, 255, 255, 0.88); }
-.menu-group + .menu-group { margin-top: 18rpx; }
-.menu-row { position: relative; display: flex; height: 84rpx; align-items: center; }
-.menu-row.divided::before { position: absolute; top: 0; right: 0; left: 66rpx; height: 1rpx; background: rgba(229, 218, 209, 0.72); content: ''; }
-.menu-icon { display: flex; width: 48rpx; height: 48rpx; flex: 0 0 48rpx; align-items: center; justify-content: center; border-radius: 15rpx; background: #fae9e2; }
-.menu-icon.muted { background: #f2ebe5; }
-.menu-label { margin-left: 18rpx; color: #5b493f; font-size: 25rpx; }
-.menu-caption { margin-left: auto; color: #ad9d93; font-size: 20rpx; }
-.row-arrow { margin-left: 10rpx; }
-
-@media screen and (max-height: 720px) {
-  .identity-card { min-height: 108rpx; margin-top: 12rpx; padding-top: 12rpx; padding-bottom: 12rpx; }
-  .account-avatar, .avatar-fallback { width: 76rpx; height: 76rpx; flex-basis: 76rpx; }
-  .archive-card { height: 346rpx; margin-top: 18rpx; }
-  .self-name, .partner-name { top: 224rpx; }
-  .guest-home { padding-top: 6rpx; }
-  .guest-hero-art { width: 400rpx; height: 347rpx; }
-  .guest-heading { margin-top: 8rpx; font-size: 31rpx; }
-  .guest-login-button { width: 414rpx; height: 80rpx; margin-top: 26rpx; font-size: 28rpx; line-height: 80rpx; }
-  .menu-group { margin-top: 18rpx; }
-  .menu-row { height: 78rpx; }
+/* Fit the available mini-program viewport; the native tab bar owns its safe area. */
+.profile-page { display: flex; height: 100vh; min-height: 0; flex-direction: column; padding-bottom: 8rpx; }
+.profile-header { flex-shrink: 0; padding-bottom: 24rpx; }
+.header-sprig { position: absolute; bottom: 8rpx; width: 126rpx; height: 178rpx; pointer-events: none; }
+.header-sprig-left { left: -24rpx; transform: rotate(12deg); }
+.header-sprig-right { right: -24rpx; transform: scaleX(-1) rotate(12deg); }
+.identity { padding-top: 16rpx; }
+.avatar-button { width: 148rpx; height: 148rpx; border-width: 4rpx; }
+.identity-name { margin-top: 12rpx; font-size: 30rpx; }
+.identity-status { margin-top: 4rpx; font-size: 21rpx; }
+.page-content { display: flex; flex: 1; min-height: 0; flex-direction: column; }
+.archive-card { flex-shrink: 0; min-height: 238rpx; margin-top: 22rpx; padding: 22rpx 32rpx; border-radius: 26rpx; }
+.archive-title { font-size: 30rpx; }
+.archive-subtitle { margin-top: 8rpx; font-size: 22rpx; }
+.archive-emblem { top: 28rpx; right: 18rpx; width: 246rpx; height: 180rpx; }
+.profile-button { width: 234rpx; height: 62rpx; margin-top: 14rpx; font-size: 25rpx; }
+.archive-note { margin-top: 10rpx; font-size: 20rpx; }
+.has-profile { min-height: 254rpx; }
+.has-profile .archive-emblem { top: 34rpx; }
+.days-line { margin-top: 8rpx; }
+.days-number { font-size: 42rpx; }
+.days-label, .days-unit { font-size: 21rpx; }
+.has-profile .archive-subtitle { margin-top: 6rpx; font-size: 20rpx; }
+.partner-name { margin-top: 4rpx; font-size: 20rpx; }
+.settings-list { flex-shrink: 0; margin-top: 16rpx; }
+.menu-row { min-height: 104rpx; }
+.menu-label { font-size: 26rpx; }
+.menu-caption { font-size: 20rpx; }
+.page-signature { flex: 1; min-height: 70rpx; max-height: 160rpx; }
+.signature-copy { font-size: 20rpx; }
+.signature-sprig { right: -8rpx; width: 108rpx; height: 138rpx; max-height: 100%; }
+@media screen and (max-height: 640px) {
+  .profile-header { padding-bottom: 18rpx; }
+  .identity { padding-top: 10rpx; }
+  .avatar-button { width: 126rpx; height: 126rpx; }
+  .identity-name { margin-top: 8rpx; font-size: 28rpx; }
+  .identity-status { font-size: 20rpx; }
+  .archive-card { margin-top: 16rpx; min-height: 216rpx; padding-top: 18rpx; padding-bottom: 18rpx; }
+  .has-profile { min-height: 230rpx; }
+  .archive-emblem { width: 220rpx; height: 164rpx; }
+  .has-profile .archive-emblem { top: 26rpx; }
+  .archive-title { font-size: 28rpx; }
+  .profile-button { height: 58rpx; margin-top: 12rpx; }
+  .settings-list { margin-top: 10rpx; }
+  .menu-row { min-height: 92rpx; }
+  .page-signature { min-height: 60rpx; }
 }
 </style>

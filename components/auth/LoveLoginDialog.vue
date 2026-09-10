@@ -22,7 +22,7 @@
           </view>
           <view class="avatar-frame">
             <image v-if="avatarPreview" class="avatar-image" :src="avatarPreview" mode="aspectFill" />
-            <image v-else class="avatar-placeholder-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-avatar-couple.png" mode="aspectFit" />
+            <image v-else class="avatar-placeholder-art" src="/static/profile/companion/default-avatar.png" mode="aspectFit" />
             <view class="camera-badge">
               <uni-icons type="camera-filled" size="13" color="#ffffff" />
             </view>
