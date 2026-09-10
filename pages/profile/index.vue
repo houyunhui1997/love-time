@@ -31,23 +31,34 @@
               <text class="archive-subtitle">始于 {{ displayStartDate }}</text>
               <text v-if="profile.partnerName" class="partner-name">与 {{ profile.partnerName }} 慢慢相伴</text>
             </template>
-            <!-- <text v-else class="archive-subtitle">补充资料，开启专属记录</text> -->
-            <button class="profile-button" @tap="openProfileDialog">
-              <text>{{ profile ? '编辑资料' : '完善资料' }}</text>
+            <button v-if="!profile" class="profile-button" @tap="openProfileDialog">
+              <text>完善资料</text>
               <uni-icons type="right" size="18" color="#fffaf5" />
             </button>
-            <!-- <text v-if="!profile" class="archive-note">稍后填写也可以</text> -->
           </view>
         </view>
 
         <view class="settings-list">
           <view v-for="(group, groupIndex) in menuGroups" :key="groupIndex" class="menu-group">
-            <view v-for="item in group" :key="item.label" class="menu-row" hover-class="menu-row-pressed" @tap="openMenu(item.label)">
-              <view class="menu-icon"><uni-icons :type="item.icon" size="27" color="#df8176" /></view>
-              <text class="menu-label">{{ item.label }}</text>
-              <text v-if="item.caption" class="menu-caption">{{ item.caption }}</text>
-              <uni-icons class="row-arrow" type="right" size="19" color="#ae9788" />
-            </view>
+            <template v-for="item in group" :key="item.label">
+              <button
+                v-if="item.share"
+                class="menu-row menu-share-button"
+                open-type="share"
+                hover-class="menu-row-pressed"
+              >
+                <view class="menu-icon"><uni-icons :type="item.icon" size="27" color="#df8176" /></view>
+                <text class="menu-label">{{ item.label }}</text>
+                <text v-if="item.caption" class="menu-caption">{{ item.caption }}</text>
+                <uni-icons class="row-arrow" type="right" size="19" color="#ae9788" />
+              </button>
+              <view v-else class="menu-row" hover-class="menu-row-pressed" @tap="openMenu(item.label)">
+                <view class="menu-icon"><uni-icons :type="item.icon" size="27" color="#df8176" /></view>
+                <text class="menu-label">{{ item.label }}</text>
+                <text v-if="item.caption" class="menu-caption">{{ item.caption }}</text>
+                <uni-icons class="row-arrow" type="right" size="19" color="#ae9788" />
+              </view>
+            </template>
           </view>
         </view>
 
@@ -69,7 +80,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
 import { differenceInCalendarDays, formatBusinessDate } from '@/utils/date'
 import { restoreWeixinSession } from '@/services/auth'
@@ -113,12 +124,13 @@ interface MenuItem {
   label: string
   icon: string
   caption?: string
+  share?: boolean
 }
 
 const menuGroups: MenuItem[][] = [
   [
     { label: '恋爱资料', icon: 'contact', caption: '个人资料与恋爱日期' },
-    { label: '提醒设置', icon: 'notification', caption: '重要日子不遗漏' }
+    { label: '分享恋时光', icon: 'redo', caption: '把这份爱分享给更多人', share: true }
   ],
   [
     { label: '隐私与协议', icon: 'locked' },
@@ -127,7 +139,6 @@ const menuGroups: MenuItem[][] = [
 ]
 
 const routeByMenu: Record<string, string> = {
-  提醒设置: '/pages/settings/reminder',
   隐私与协议: '/pages/settings/privacy',
   关于恋时光: '/pages/settings/about'
 }
@@ -140,6 +151,11 @@ const togetherDays = computed(() => profile.value ? Math.max(0, differenceInCale
 const displayStartDate = computed(() => profile.value?.loveStartDate.replace(/-/g, '.') || '')
 
 onShow(loadProfilePage)
+
+onShareAppMessage(() => ({
+  title: '恋时光 · 记录爱，纪念每一个值得的日子',
+  path: '/pages/anniversary/index'
+}))
 
 async function loadProfilePage() {
   isLoggedIn.value = await restoreWeixinSession()
@@ -205,25 +221,26 @@ function openMenu(label: string) {
 .identity-name { display: block; max-width: 80%; margin-top: 18rpx; overflow: hidden; color: #503d32; font-size: 34rpx; font-weight: 600; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 .identity-status { margin-top: 8rpx; color: #a28c7c; font-size: 25rpx; line-height: 1.5; }
 .page-content { padding: 0 34rpx; }
-.archive-card { position: relative; box-sizing: border-box; min-height: 286rpx; margin-top: 28rpx; overflow: hidden; padding: 32rpx 36rpx 28rpx; border-radius: 30rpx; background: rgba(242, 231, 216, .35); }
+.archive-card { position: relative; box-sizing: border-box; min-height: 286rpx; margin-top: 28rpx; overflow: hidden; padding: 36rpx 36rpx 32rpx; border-radius: 30rpx; background: rgba(242, 231, 216, .35); }
 .archive-emblem { position: absolute; top: 44rpx; right: 18rpx; width: 292rpx; height: 208rpx; pointer-events: none; }
 .archive-content { position: relative; z-index: 1; }
-.archive-title { display: block; color: #554031; font-size: 33rpx; font-weight: 600; line-height: 1.45; }
-.archive-subtitle { display: block; max-width: 64%; margin-top: 12rpx; color: #a18b79; font-size: 24rpx; line-height: 1.55; }
+.archive-title { display: block; color: #554031; font-size: 36rpx; font-weight: 600; line-height: 1.45; letter-spacing: 2rpx; }
+.archive-subtitle { display: block; max-width: 64%; margin-top: 16rpx; color: #95806e; font-size: 26rpx; line-height: 1.6; }
 .profile-button { display: flex; box-sizing: border-box; width: 260rpx; height: 72rpx; align-items: center; justify-content: center; gap: 16rpx; margin: 20rpx 0 0; padding: 0 12rpx; border: 0; border-radius: 40rpx; background: #e47d74; color: #fffaf5; font-size: 28rpx; font-weight: 500; line-height: 1.3; }
 .profile-button::after { border: 0; }
 .profile-button:active { opacity: .85; }
 .archive-note { display: block; margin-top: 14rpx; color: #a38b79; font-size: 22rpx; line-height: 1.5; }
 .has-profile { min-height: 328rpx; }
 .has-profile .archive-emblem { top: 60rpx; }
-.days-line { display: flex; align-items: baseline; gap: 8rpx; margin-top: 12rpx; }
-.days-label, .days-unit { color: #9c8472; font-size: 22rpx; }
-.days-number { max-width: 210rpx; overflow: hidden; color: #d87973; font-family: Georgia, 'Times New Roman', serif; font-size: 48rpx; line-height: 1.1; }
-.has-profile .archive-subtitle { margin-top: 8rpx; font-size: 21rpx; }
-.partner-name { display: block; max-width: 62%; margin-top: 6rpx; overflow: hidden; color: #9e8777; font-size: 21rpx; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.days-line { display: flex; align-items: baseline; gap: 10rpx; margin-top: 18rpx; }
+.days-label, .days-unit { color: #9c8472; font-size: 25rpx; }
+.days-number { max-width: 210rpx; overflow: hidden; color: #d87973; font-family: Georgia, 'Times New Roman', serif; font-size: 56rpx; line-height: 1.1; letter-spacing: 1rpx; }
+.has-profile .archive-subtitle { margin-top: 16rpx; font-size: 24rpx; }
+.partner-name { display: block; max-width: 62%; margin-top: 12rpx; overflow: hidden; color: #95806e; font-size: 24rpx; line-height: 1.6; text-overflow: ellipsis; white-space: nowrap; }
 .settings-list { margin-top: 26rpx; }
 .menu-row { display: flex; min-height: 132rpx; align-items: center; gap: 18rpx; border-bottom: 1rpx solid #f0e6dc; }
 .menu-group:last-child .menu-row:last-child { border-bottom: 0; }
+.menu-share-button { width: 100%; margin: 0; padding: 0; border: 0; border-bottom: 1rpx solid #f0e6dc; border-radius: 0; background: transparent; text-align: left; font-family: inherit; font-size: inherit; line-height: inherit; color: inherit; }
 .menu-row-pressed { opacity: .65; }
 .menu-icon { display: flex; width: 58rpx; flex: 0 0 58rpx; align-items: center; justify-content: center; }
 .menu-label { color: #634d3d; font-size: 28rpx; white-space: nowrap; }
@@ -246,8 +263,8 @@ function openMenu(label: string) {
   .menu-row { gap: 12rpx; }
   .menu-label { font-size: 27rpx; }
   .menu-caption { font-size: 20rpx; }
-  .archive-title { font-size: 32rpx; }
-  .archive-subtitle { font-size: 22rpx; }
+  .archive-title { font-size: 33rpx; }
+  .archive-subtitle { font-size: 23rpx; }
 }
 /* Fit the available mini-program viewport; the native tab bar owns its safe area. */
 .profile-page { display: flex; height: 100vh; min-height: 0; flex-direction: column; padding-bottom: 8rpx; }
@@ -260,19 +277,19 @@ function openMenu(label: string) {
 .identity-name { margin-top: 12rpx; font-size: 30rpx; }
 .identity-status { margin-top: 4rpx; font-size: 21rpx; }
 .page-content { display: flex; flex: 1; min-height: 0; flex-direction: column; }
-.archive-card { flex-shrink: 0; min-height: 238rpx; margin-top: 22rpx; padding: 22rpx 32rpx; border-radius: 26rpx; }
-.archive-title { font-size: 30rpx; }
-.archive-subtitle { margin-top: 8rpx; font-size: 22rpx; }
+.archive-card { flex-shrink: 0; min-height: 238rpx; margin-top: 22rpx; padding: 26rpx 32rpx 24rpx; border-radius: 26rpx; }
+.archive-title { font-size: 33rpx; }
+.archive-subtitle { margin-top: 12rpx; font-size: 24rpx; }
 .archive-emblem { top: 28rpx; right: 18rpx; width: 246rpx; height: 180rpx; }
 .profile-button { width: 234rpx; height: 62rpx; margin-top: 50rpx; font-size: 25rpx; }
 .archive-note { margin-top: 10rpx; font-size: 20rpx; }
 .has-profile { min-height: 254rpx; }
 .has-profile .archive-emblem { top: 34rpx; }
-.days-line { margin-top: 8rpx; }
-.days-number { font-size: 42rpx; }
-.days-label, .days-unit { font-size: 21rpx; }
-.has-profile .archive-subtitle { margin-top: 6rpx; font-size: 20rpx; }
-.partner-name { margin-top: 4rpx; font-size: 20rpx; }
+.days-line { margin-top: 14rpx; }
+.days-number { font-size: 50rpx; }
+.days-label, .days-unit { font-size: 23rpx; }
+.has-profile .archive-subtitle { margin-top: 12rpx; font-size: 22rpx; }
+.partner-name { margin-top: 8rpx; font-size: 22rpx; }
 .settings-list { flex-shrink: 0; margin-top: 16rpx; }
 .menu-row { min-height: 104rpx; }
 .menu-label { font-size: 26rpx; }
@@ -286,11 +303,11 @@ function openMenu(label: string) {
   .avatar-button { width: 126rpx; height: 126rpx; }
   .identity-name { margin-top: 8rpx; font-size: 28rpx; }
   .identity-status { font-size: 20rpx; }
-  .archive-card { margin-top: 16rpx; min-height: 216rpx; padding-top: 18rpx; padding-bottom: 18rpx; }
+  .archive-card { margin-top: 16rpx; min-height: 216rpx; padding-top: 22rpx; padding-bottom: 20rpx; }
   .has-profile { min-height: 230rpx; }
   .archive-emblem { width: 220rpx; height: 164rpx; }
   .has-profile .archive-emblem { top: 26rpx; }
-  .archive-title { font-size: 28rpx; }
+  .archive-title { font-size: 30rpx; }
   .profile-button { height: 58rpx; margin-top: 12rpx; }
   .settings-list { margin-top: 10rpx; }
   .menu-row { min-height: 92rpx; }
