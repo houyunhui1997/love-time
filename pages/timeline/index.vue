@@ -106,7 +106,7 @@
     <image
       v-if="!sessionError"
       class="bottom-bouquet"
-      src="/static/timeline/timeline-bottom-bouquet.png"
+      src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/timeline/timeline-bottom-bouquet.png"
       mode="aspectFit"
     />
 

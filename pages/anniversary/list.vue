@@ -131,9 +131,9 @@ const filters: Array<{ label: string; value: FilterValue }> = [
 ]
 
 const iconMap: Record<Exclude<FilterValue, 'all'>, string> = {
-  countdown: '/static/anniversary/countdown-day-paper.png',
-  anniversary: '/static/anniversary/anniversary-heart-paper.png',
-  birthday: '/static/anniversary/birthday-cake-paper.png'
+  countdown: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/countdown-day-paper.png',
+  anniversary: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/anniversary-heart-paper.png',
+  birthday: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/birthday-cake-paper.png'
 }
 
 const activeFilter = ref<FilterValue>('all')

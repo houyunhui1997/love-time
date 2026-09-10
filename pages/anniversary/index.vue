@@ -199,9 +199,9 @@ function mapItem(item: AnniversaryListItem): AnniversaryItem {
   const daysLeft = Math.max(0, differenceInCalendarDays(nextDate, today))
 
   const iconMap: Record<string, string> = {
-    birthday: '/static/anniversary/birthday-cake-paper.png',
-    countdown: '/static/anniversary/countdown-day-paper.png',
-    anniversary: '/static/anniversary/anniversary-heart-paper.png'
+    birthday: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/birthday-cake-paper.png',
+    countdown: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/countdown-day-paper.png',
+    anniversary: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/anniversary-heart-paper.png'
   }
 
   return {

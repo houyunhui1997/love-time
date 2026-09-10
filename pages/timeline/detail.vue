@@ -21,11 +21,11 @@
               <text>{{ moodOption.label }}</text>
             </view>
           </view>
-          <image class="header-floral" src="/static/timeline/timeline-bottom-bouquet.png" mode="aspectFit" />
+          <image class="header-floral" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/timeline/timeline-bottom-bouquet.png" mode="aspectFit" />
         </view>
 
         <view class="content-card glass-card">
-          <image class="paper-tape" src="/static/timeline/moment-paper-tape.png" mode="aspectFit" />
+          <image class="paper-tape" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/timeline/moment-paper-tape.png" mode="aspectFit" />
           <text class="moment-content">{{ moment.content }}</text>
         </view>
 
@@ -68,7 +68,7 @@
       </view>
     </scroll-view>
 
-    <image class="bottom-floral" src="/static/timeline/timeline-bottom-bouquet.png" mode="aspectFit" />
+    <image class="bottom-floral" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/timeline/timeline-bottom-bouquet.png" mode="aspectFit" />
     <LoveLoading :visible="loading" fullscreen text="正在加载时光" />
   </view>
 </template>

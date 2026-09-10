@@ -12,12 +12,12 @@
     <view class="love-loading__visual">
       <image
         class="love-loading__wreath"
-        src="/static/loading/love-loading-wreath.png"
+        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/loading/love-loading-wreath.png"
         mode="aspectFit"
       />
       <image
         class="love-loading__heart"
-        src="/static/loading/love-loading-heart.png"
+        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/loading/love-loading-heart.png"
         mode="aspectFit"
       />
     </view>

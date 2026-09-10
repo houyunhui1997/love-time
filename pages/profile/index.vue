@@ -1,8 +1,8 @@
 <template>
   <view class="profile-page" :style="pageStyle">
     <view class="profile-header">
-      <image class="header-sprig header-sprig-left" src="/static/profile/companion/botanical-sprig.png" mode="aspectFit" />
-      <image class="header-sprig header-sprig-right" src="/static/profile/companion/botanical-sprig.png" mode="aspectFit" />
+      <image class="header-sprig header-sprig-left" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/botanical-sprig.png" mode="aspectFit" />
+      <image class="header-sprig header-sprig-right" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/botanical-sprig.png" mode="aspectFit" />
       <view class="page-header">
         <!-- <text class="page-title">我的</text>
         <text class="eyebrow">LOVE TIME</text> -->
@@ -15,7 +15,7 @@
         <text class="identity-status">{{ profile ? '' : '已临时登录' }}</text>
       </view>
       <view v-else class="identity identity-offline">
-        <image class="offline-emblem" src="/static/profile/companion/heart-emblem.png" mode="aspectFit" />
+        <image class="offline-emblem" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/heart-emblem.png" mode="aspectFit" />
         <text class="identity-name">恋时光</text>
       </view>
     </view>
@@ -23,7 +23,7 @@
     <view class="page-content">
       <template v-if="isLoggedIn">
         <view class="archive-card" :class="{ 'has-profile': profile }">
-          <image class="archive-emblem" src="/static/profile/companion/heart-emblem.png" mode="aspectFit" />
+          <image class="archive-emblem" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/heart-emblem.png" mode="aspectFit" />
           <view class="archive-content">
             <text class="archive-title">我们的恋爱档案</text>
             <template v-if="profile">
@@ -64,7 +64,7 @@
 
         <view class="page-signature">
           <view class="signature-line"><view class="signature-rule" /><text class="signature-copy">慢慢记录，长长相伴</text><view class="signature-rule" /></view>
-          <!-- <image class="signature-sprig" src="/static/profile/companion/botanical-sprig.png" mode="aspectFit" /> -->
+          <!-- <image class="signature-sprig" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/botanical-sprig.png" mode="aspectFit" /> -->
         </view>
       </template>
 
@@ -146,7 +146,7 @@ const routeByMenu: Record<string, string> = {
 const today = formatBusinessDate(new Date())
 const accountName = computed(() => account.value?.nickname || '恋时光用户')
 const avatarFailed = ref(false)
-const accountAvatar = computed(() => !avatarFailed.value && account.value?.avatarFileId || '/static/profile/companion/default-avatar.png')
+const accountAvatar = computed(() => !avatarFailed.value && account.value?.avatarFileId || 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/default-avatar.png')
 const togetherDays = computed(() => profile.value ? Math.max(0, differenceInCalendarDays(today, profile.value.loveStartDate)) : 0)
 const displayStartDate = computed(() => profile.value?.loveStartDate.replace(/-/g, '.') || '')
 
@@ -206,7 +206,7 @@ function openMenu(label: string) {
   min-height: 100vh;
   padding-bottom: calc(env(safe-area-inset-bottom) + 16rpx);
   color: #554238;
-  background: #fcf7f1 url('/static/profile/companion/paper-texture.jpg') repeat;
+  background: #fcf7f1 url('https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/paper-texture.jpg') repeat;
   background-size: 256rpx 256rpx;
 }
 .profile-header { position: relative; overflow: hidden; padding-bottom: 38rpx; border-radius: 0 0 50% 50% / 0 0 12% 12%; background: #f9e8df; }
