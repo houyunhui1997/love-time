@@ -30,6 +30,7 @@ export interface CreateAnniversaryParams {
   targetDate: string
   repeatType: AnniversaryRepeat
   reminderOffsetDays: number[]
+  reminderTime?: string
   note: string
   pinned: boolean
 }

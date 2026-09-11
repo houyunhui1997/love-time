@@ -2,7 +2,7 @@
   "pages": [
     { "path": "pages/anniversary/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/anniversary/list", "style": { "navigationStyle": "custom", "disableScroll": true } },
-    { "path": "pages/anniversary/edit", "style": { "navigationStyle": "custom", "disableScroll": true } },
+    { "path": "pages/anniversary/edit", "style": { "navigationStyle": "custom", "disableScroll": false } },
     { "path": "pages/anniversary/detail", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/timeline/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/timeline/edit", "style": { "navigationStyle": "custom", "disableScroll": true } },

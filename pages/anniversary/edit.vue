@@ -80,13 +80,26 @@
 
       <!-- 提醒时间 -->
       <view class="form-row" @tap="showReminderPicker = true">
-        <text class="form-label">提醒时间</text>
+        <text class="form-label">提前提醒</text>
         <view class="form-value-row">
           <text class="form-value">{{ reminderLabel }}</text>
           <view class="arrow-right" />
         </view>
       </view>
       <view class="form-divider" />
+
+      <template v-if="form.reminderOffsetDays.length > 0">
+        <picker mode="time" :value="form.reminderTime" :disabled="saving" @change="onReminderTimeChange">
+          <view class="form-row">
+            <text class="form-label">提醒时刻</text>
+            <view class="form-value-row">
+              <text class="form-value">{{ form.reminderTime }}（北京时间）</text>
+              <view class="arrow-right" />
+            </view>
+          </view>
+        </picker>
+        <view class="form-divider" />
+      </template>
 
       <!-- 备注 -->
       <view class="form-row form-row-top">
@@ -210,6 +223,7 @@ interface FormData {
   eventType: AnniversaryType
   repeatType: AnniversaryRepeat
   reminderOffsetDays: number[]
+  reminderTime: string
   note: string
   pinned: boolean
 }
@@ -222,7 +236,7 @@ const templateLoading = ref(true)
 const formLoaded = ref(true)
 const reminderTemplateId = ref('')
 let originalReminderKey = ''
-function reminderKey(date: string, offsets: number[]) { return JSON.stringify([date, offsets]) }
+function reminderKey(date: string, offsets: number[], time: string) { return JSON.stringify([date, offsets, time]) }
 const showDatePicker = ref(false)
 const showRepeatPicker = ref(false)
 const showReminderPicker = ref(false)
@@ -260,6 +274,7 @@ const form = reactive<FormData>({
   eventType: 'countdown',
   repeatType: 'yearly',
   reminderOffsetDays: [1],
+  reminderTime: '09:00',
   note: '',
   pinned: false
 })
@@ -349,6 +364,12 @@ function selectReminder(value: number) {
   showReminderPicker.value = false
 }
 
+function onReminderTimeChange(event: { detail: { value: string } }) {
+  if (!saving.value && /^([01]\d|2[0-3]):[0-5]\d$/.test(event.detail.value)) {
+    form.reminderTime = event.detail.value
+  }
+}
+
 onLoad(async (options) => {
   void getReminderTemplate().then(id => { reminderTemplateId.value = id }).catch(() => { reminderTemplateId.value = '' }).finally(() => { templateLoading.value = false })
   if (options?.id) {
@@ -363,9 +384,10 @@ onLoad(async (options) => {
       form.eventType = data.eventType
       form.repeatType = data.repeatType
       form.reminderOffsetDays = data.reminderOffsetDays
+      form.reminderTime = data.reminderTime || '09:00'
       form.note = data.note
       form.pinned = data.pinned
-      originalReminderKey = reminderKey(data.targetDate, data.reminderOffsetDays)
+      originalReminderKey = reminderKey(data.targetDate, data.reminderOffsetDays, form.reminderTime)
       formLoaded.value = true
     } catch (error) {
       const message = error instanceof Error ? error.message : '纪念日加载失败'
@@ -398,15 +420,20 @@ async function onSave() {
   }
   try { parseBusinessDate(form.targetDate) }
   catch { uni.showToast({ title: '请选择有效的纪念日期', icon: 'none' }); return }
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(form.reminderTime)) {
+    uni.showToast({ title: '请选择有效的提醒时刻', icon: 'none' })
+    return
+  }
 
   // 点击时冻结本次保存内容，避免授权期间表单变化造成保存与订阅错配。
   const payload = {
     title: form.title.trim(), eventType: form.eventType, targetDate: form.targetDate,
     repeatType: form.repeatType, reminderOffsetDays: [...form.reminderOffsetDays],
+    reminderTime: form.reminderTime,
     note: form.note.trim(), pinned: form.pinned
   }
   const shouldSubscribe = payload.reminderOffsetDays.length > 0
-    && (!isEdit.value || reminderKey(payload.targetDate, payload.reminderOffsetDays) !== originalReminderKey)
+    && (!isEdit.value || reminderKey(payload.targetDate, payload.reminderOffsetDays, payload.reminderTime) !== originalReminderKey)
   const wasEdit = isEdit.value
   let accepted = false
   let reminderMessage = ''
@@ -431,7 +458,7 @@ async function onSave() {
       editRevision.value = created.revision
     }
     saved = true
-    originalReminderKey = reminderKey(payload.targetDate, payload.reminderOffsetDays)
+    originalReminderKey = reminderKey(payload.targetDate, payload.reminderOffsetDays, payload.reminderTime)
     if (accepted) {
       try {
         const plan = await prepareReminder(editId.value)
@@ -468,20 +495,20 @@ async function onSave() {
 
 <style scoped lang="scss">
 .edit-page {
-  position: fixed;
+  position: relative;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
   width: auto;
   height: auto;
-  min-height: 0;
+  min-height: 100vh;
   box-sizing: border-box;
   padding-bottom: calc(var(--love-safe-bottom) + 24rpx);
   background:
     radial-gradient(circle at 92% 38%, rgba(255, 253, 249, 0.7), transparent 40%),
     linear-gradient(180deg, #fbf3e9 0%, #fcf7ef 52%, #faf3ea 100%);
-  overflow: hidden;
+  overflow-x: hidden;
   color: #57483e;
 }
 

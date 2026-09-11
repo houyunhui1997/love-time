@@ -58,6 +58,9 @@ function validatePayload(params, { partial = false } = {}) {
       params.reminderOffsetDays = [...new Set(params.reminderOffsetDays)]
     }
   }
+  if (params.reminderTime !== undefined && (typeof params.reminderTime !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(params.reminderTime))) {
+    throw new AppError(API_CODE.INVALID_PARAMS, '提醒时刻须为 00:00 至 23:59')
+  }
   if (params.note !== undefined && typeof params.note === 'string') params.note = params.note.trim().slice(0, 100)
   if (params.pinned !== undefined && typeof params.pinned !== 'boolean') {
     throw new AppError(API_CODE.INVALID_PARAMS, '置顶参数不正确')
@@ -115,7 +118,7 @@ module.exports = {
         calendarType: 'solar',
         repeatType: params.repeatType,
         reminderOffsetDays: params.reminderOffsetDays || [],
-        reminderTime: '09:00',
+        reminderTime: params.reminderTime === undefined ? '09:00' : params.reminderTime,
         reminderVersion: 2,
         subscription: { status: 'none' },
         note: params.note || '',
@@ -146,12 +149,13 @@ module.exports = {
       if (existing.creatorUid !== auth.uid) throw new AppError(API_CODE.FORBIDDEN, '无权修改该纪念日')
       if (existing.subscription && existing.subscription.status === 'sending') throw new AppError(API_CODE.INVALID_PARAMS, '提醒正在发送，请稍后修改')
       const patch = {}
-      for (const key of ['title', 'eventType', 'targetDate', 'repeatType', 'reminderOffsetDays', 'note', 'pinned']) {
+      for (const key of ['title', 'eventType', 'targetDate', 'repeatType', 'reminderOffsetDays', 'reminderTime', 'note', 'pinned']) {
         if (params[key] !== undefined) patch[key] = params[key]
       }
       validatePayload(patch, { partial: true })
       const nextOffsets = patch.reminderOffsetDays || offsets(existing)
       const scheduleChanged = (patch.targetDate !== undefined && patch.targetDate !== existing.targetDate)
+        || (patch.reminderTime !== undefined && patch.reminderTime !== (existing.reminderTime || '09:00'))
         || JSON.stringify(nextOffsets) !== JSON.stringify(offsets(existing))
       // 名称、备注、置顶及重复展示方式不改变已安排的订阅。
       const subscriptionPatch = scheduleChanged ? { subscription: { status: 'cancelled' } } : {}
