@@ -80,8 +80,8 @@
               <text class="countdown-today">今天到啦</text>
             </view>
             <view v-else class="item-countdown">
-              <text class="countdown-label">还有</text>
-              <text class="countdown-days">{{ item.daysLeft }}</text>
+              <text class="countdown-label">{{ item.daysLeft < 0 ? '已过' : '还有' }}</text>
+              <text class="countdown-days">{{ Math.abs(item.daysLeft) }}</text>
               <text class="countdown-unit">天</text>
             </view>
           </view>
@@ -175,11 +175,11 @@ interface AnniversaryItem {
 }
 
 const profile = ref<LoveProfile | null>(null)
-const today = formatBusinessDate(new Date())
+const today = ref(formatBusinessDate(new Date()))
 
 const togetherDays = computed(() => {
   if (!profile.value?.loveStartDate) return 0
-  return Math.max(0, differenceInCalendarDays(today, profile.value.loveStartDate))
+  return Math.max(0, differenceInCalendarDays(today.value, profile.value.loveStartDate))
 })
 
 const displayStartDate = computed(() => {
@@ -195,8 +195,8 @@ const showProfileDialog = ref(false)
 
 function mapItem(item: AnniversaryListItem): AnniversaryItem {
   const isYearly = item.repeatType === 'yearly'
-  const nextDate = isYearly ? getNextYearlyOccurrence(item.targetDate, today) : item.targetDate
-  const daysLeft = Math.max(0, differenceInCalendarDays(nextDate, today))
+  const nextDate = isYearly ? getNextYearlyOccurrence(item.targetDate, today.value) : item.targetDate
+  const daysLeft = differenceInCalendarDays(nextDate, today.value)
 
   const iconMap: Record<string, string> = {
     birthday: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/birthday-cake-paper.png',
@@ -226,12 +226,13 @@ async function loadData() {
     const page = await listAnniversaries()
     const sorted = [...page.list].sort((a, b) => {
       const aLeft = a.repeatType === 'yearly'
-        ? differenceInCalendarDays(getNextYearlyOccurrence(a.targetDate, today), today)
-        : differenceInCalendarDays(a.targetDate, today)
+        ? differenceInCalendarDays(getNextYearlyOccurrence(a.targetDate, today.value), today.value)
+        : differenceInCalendarDays(a.targetDate, today.value)
       const bLeft = b.repeatType === 'yearly'
-        ? differenceInCalendarDays(getNextYearlyOccurrence(b.targetDate, today), today)
-        : differenceInCalendarDays(b.targetDate, today)
-      return aLeft - bLeft
+        ? differenceInCalendarDays(getNextYearlyOccurrence(b.targetDate, today.value), today.value)
+        : differenceInCalendarDays(b.targetDate, today.value)
+      if ((aLeft < 0) !== (bLeft < 0)) return aLeft < 0 ? 1 : -1
+      return aLeft < 0 ? bLeft - aLeft : aLeft - bLeft
     })
     recentAnniversaries.value = sorted.slice(0, 3).map(mapItem)
     empty.value = recentAnniversaries.value.length === 0
@@ -244,6 +245,7 @@ async function loadData() {
 }
 
 onShow(async () => {
+  today.value = formatBusinessDate(new Date())
   loading.value = true
   sessionError.value = !(await restoreWeixinSession())
   if (sessionError.value) {
@@ -986,3 +988,5 @@ function onProfileSaved(result: CompleteProfileResult) {
   }
 }
 </style>
+
+

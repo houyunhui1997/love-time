@@ -38,7 +38,7 @@ export function getNextYearlyOccurrence(targetDate: string, today: string): stri
   const month = source.getMonth()
   const day = source.getDate()
 
-  let candidateYear = current.getFullYear()
+  let candidateYear = Math.max(current.getFullYear(), source.getFullYear())
   let candidate = safeYearlyDate(candidateYear, month, day)
 
   if (candidate < current) {
@@ -57,4 +57,5 @@ function safeYearlyDate(year: number, month: number, day: number): Date {
 
   return new Date(year, month, day)
 }
+
 

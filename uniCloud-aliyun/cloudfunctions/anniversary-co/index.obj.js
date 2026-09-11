@@ -1,6 +1,7 @@
 'use strict'
 
 const uniIdCommon = require('uni-id-common')
+const { offsets, parseDate } = require('love-reminder')
 const { success, normalizeError, AppError, API_CODE, requireString } = require('love-common')
 const db = uniCloud.database()
 const dbCmd = db.command
@@ -24,7 +25,7 @@ function toClient(item) {
     eventType: item.eventType,
     targetDate: item.targetDate,
     repeatType: item.repeatType,
-    reminderOffsetDays: item.reminderOffsetDays || [],
+    reminderOffsetDays: offsets(item),
     reminderTime: item.reminderTime || '09:00',
     note: item.note || '',
     pinned: !!item.pinned,
@@ -42,6 +43,7 @@ function validatePayload(params, { partial = false } = {}) {
     if (typeof params.targetDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(params.targetDate)) {
       throw new AppError(API_CODE.INVALID_PARAMS, '纪念日期格式不正确')
     }
+    try { parseDate(params.targetDate) } catch (_) { throw new AppError(API_CODE.INVALID_PARAMS, '纪念日期不存在') }
   }
   if (!partial || params.repeatType !== undefined) {
     if (params.repeatType !== undefined && !REPEAT_TYPES.includes(params.repeatType)) {
@@ -74,7 +76,9 @@ module.exports = {
       const cursor = typeof params.cursor === 'string' && params.cursor ? params.cursor : null
       const where = { creatorUid: auth.uid, status: 'active' }
       if (cursor) where._id = dbCmd.gt(cursor)
-      const result = await anniversaries.where(where).orderBy('pinned', 'desc').orderBy('_id', 'asc').limit(PAGE_SIZE + 1).get()
+      const query = anniversaries.where(where)
+      const ordered = params.cursorOrder === true ? query.orderBy('_id', 'asc') : query.orderBy('pinned', 'desc').orderBy('_id', 'asc')
+      const result = await ordered.limit(PAGE_SIZE + 1).get()
       const items = result.data || []
       const hasMore = items.length > PAGE_SIZE
       const list = hasMore ? items.slice(0, PAGE_SIZE) : items
@@ -112,6 +116,8 @@ module.exports = {
         repeatType: params.repeatType,
         reminderOffsetDays: params.reminderOffsetDays || [],
         reminderTime: '09:00',
+        reminderVersion: 2,
+        subscription: { status: 'none' },
         note: params.note || '',
         pinned: !!params.pinned,
         source: 'user',
@@ -138,12 +144,18 @@ module.exports = {
       const existing = existingResult.data && existingResult.data[0]
       if (!existing || existing.status !== 'active') throw new AppError(API_CODE.NOT_FOUND, '纪念日不存在')
       if (existing.creatorUid !== auth.uid) throw new AppError(API_CODE.FORBIDDEN, '无权修改该纪念日')
+      if (existing.subscription && existing.subscription.status === 'sending') throw new AppError(API_CODE.INVALID_PARAMS, '提醒正在发送，请稍后修改')
       const patch = {}
       for (const key of ['title', 'eventType', 'targetDate', 'repeatType', 'reminderOffsetDays', 'note', 'pinned']) {
         if (params[key] !== undefined) patch[key] = params[key]
       }
       validatePayload(patch, { partial: true })
-      const updated = await anniversaries.where({ _id: id, revision }).update({ ...patch, updatedAt: Date.now(), revision: dbCmd.inc(1) })
+      const nextOffsets = patch.reminderOffsetDays || offsets(existing)
+      const scheduleChanged = (patch.targetDate !== undefined && patch.targetDate !== existing.targetDate)
+        || JSON.stringify(nextOffsets) !== JSON.stringify(offsets(existing))
+      // 名称、备注、置顶及重复展示方式不改变已安排的订阅。
+      const subscriptionPatch = scheduleChanged ? { subscription: { status: 'cancelled' } } : {}
+      const updated = await anniversaries.where({ _id: id, revision, status: 'active', 'subscription.status': dbCmd.neq('sending') }).update({ ...patch, reminderVersion: 2, reminderOffsetDays: nextOffsets, ...subscriptionPatch, updatedAt: Date.now(), revision: dbCmd.inc(1) })
       if (!updated.updated) throw new AppError(API_CODE.REVISION_CONFLICT, '数据已被修改，请刷新后重试')
       return success({ _id: id })
     } catch (error) {
@@ -159,10 +171,13 @@ module.exports = {
       const existing = existingResult.data && existingResult.data[0]
       if (!existing || existing.status !== 'active') throw new AppError(API_CODE.NOT_FOUND, '纪念日不存在')
       if (existing.creatorUid !== auth.uid) throw new AppError(API_CODE.FORBIDDEN, '无权删除该纪念日')
-      await anniversaries.doc(id).update({ status: 'deleted', deletedAt: Date.now(), updatedAt: Date.now(), revision: dbCmd.inc(1) })
+      const removed = await anniversaries.where({ _id: id, revision: existing.revision, 'subscription.status': dbCmd.neq('sending') }).update({ subscription: { status: 'cancelled' }, status: 'deleted', deletedAt: Date.now(), updatedAt: Date.now(), revision: dbCmd.inc(1) })
+      if (!removed.updated) throw new AppError(API_CODE.REVISION_CONFLICT, '纪念日已变化或提醒正在发送，请稍后重试')
       return success({ _id: id })
     } catch (error) {
       return normalizeError(error)
     }
   }
 }
+
+

@@ -26,6 +26,8 @@
     "count": false
   },
   "properties": {
+    "reminderVersion": { "bsonType": "int", "description": "2: 空数组关闭，0当天；缺省记录的0按旧版关闭处理" },
+    "subscription": { "bsonType": "object", "description": "仅服务端维护的一次性订阅任务，含接收人和任务状态" },
     "_id": { "description": "系统主键" },
     "creatorUid": { "bsonType": "string" },
     "title": { "bsonType": "string", "minLength": 1, "maxLength": 20 },
@@ -49,4 +51,5 @@
     "revision": { "bsonType": "int", "minimum": 1 }
   }
 }
+
 

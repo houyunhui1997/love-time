@@ -116,11 +116,11 @@
 
     <!-- 底部按钮 -->
     <view class="action-area">
-      <button class="save-button" :disabled="saving" @tap="onSave">
+      <button class="save-button" :disabled="saving || templateLoading || !formLoaded" @tap="onSave">
         <LoveLoading v-if="saving" size="mini" text="" :mask="false" />
         <text>{{ saving ? '保存中...' : '保存纪念日' }}</text>
       </button>
-      <text class="save-tip">保存后将在首页和时光轴中显示</text>
+      <text class="save-tip">设置提醒后，保存时会请求微信订阅授权</text>
     </view>
 
     <image
@@ -184,11 +184,11 @@
           v-for="item in reminderOptions"
           :key="item.value"
           class="picker-option"
-          :class="{ active: form.reminderOffsetDays[0] === item.value }"
+          :class="{ active: (form.reminderOffsetDays[0] ?? -1) === item.value }"
           @tap="selectReminder(item.value)"
         >
           <text>{{ item.label }}</text>
-          <view v-if="form.reminderOffsetDays[0] === item.value" class="check-mark" />
+          <view v-if="(form.reminderOffsetDays[0] ?? -1) === item.value" class="check-mark" />
         </view>
       </view>
     </view>
@@ -199,7 +199,8 @@
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import LoveLoading from '@/components/base/LoveLoading.vue'
-import { formatBusinessDate } from '@/utils/date'
+import { formatBusinessDate, parseBusinessDate } from '@/utils/date'
+import { getReminderTemplate, requestReminderSubscription, prepareReminder, confirmReminder } from '@/services/reminder'
 import type { AnniversaryType, AnniversaryRepeat } from '@/types/domain'
 import { createAnniversary, updateAnniversary, getAnniversary } from '@/services/anniversary'
 
@@ -217,6 +218,11 @@ const isEdit = ref(false)
 const editId = ref('')
 const editRevision = ref(1)
 const saving = ref(false)
+const templateLoading = ref(true)
+const formLoaded = ref(true)
+const reminderTemplateId = ref('')
+let originalReminderKey = ''
+function reminderKey(date: string, offsets: number[]) { return JSON.stringify([date, offsets]) }
 const showDatePicker = ref(false)
 const showRepeatPicker = ref(false)
 const showReminderPicker = ref(false)
@@ -270,7 +276,8 @@ const repeatOptions = [
 ]
 
 const reminderOptions = [
-  { label: '不提醒', value: 0 },
+  { label: '不提醒', value: -1 },
+  { label: '当天', value: 0 },
   { label: '提前 1 天', value: 1 },
   { label: '提前 3 天', value: 3 },
   { label: '提前 7 天', value: 7 }
@@ -283,7 +290,7 @@ const repeatLabel = computed(() => {
 })
 
 const reminderLabel = computed(() => {
-  return reminderOptions.find(r => r.value === form.reminderOffsetDays[0])?.label || '提前 1 天'
+  return reminderOptions.find(r => r.value === (form.reminderOffsetDays[0] ?? -1))?.label || '不提醒'
 })
 
 // 日期选择器数据
@@ -338,12 +345,14 @@ function selectRepeat(value: AnniversaryRepeat) {
 }
 
 function selectReminder(value: number) {
-  form.reminderOffsetDays = [value]
+  form.reminderOffsetDays = value < 0 ? [] : [value]
   showReminderPicker.value = false
 }
 
 onLoad(async (options) => {
+  void getReminderTemplate().then(id => { reminderTemplateId.value = id }).catch(() => { reminderTemplateId.value = '' }).finally(() => { templateLoading.value = false })
   if (options?.id) {
+    formLoaded.value = false
     isEdit.value = true
     editId.value = options.id
     try {
@@ -353,9 +362,11 @@ onLoad(async (options) => {
       form.targetDate = data.targetDate
       form.eventType = data.eventType
       form.repeatType = data.repeatType
-      form.reminderOffsetDays = data.reminderOffsetDays.length > 0 ? data.reminderOffsetDays : [0]
+      form.reminderOffsetDays = data.reminderOffsetDays
       form.note = data.note
       form.pinned = data.pinned
+      originalReminderKey = reminderKey(data.targetDate, data.reminderOffsetDays)
+      formLoaded.value = true
     } catch (error) {
       const message = error instanceof Error ? error.message : '纪念日加载失败'
       uni.showToast({ title: message, icon: 'none' })
@@ -380,40 +391,77 @@ function goBack() {
 }
 
 async function onSave() {
+  if (saving.value || templateLoading.value || !formLoaded.value) return
   if (!form.title.trim()) {
     uni.showToast({ title: '请输入纪念日名称', icon: 'none' })
     return
   }
-  if (!form.targetDate) {
-    uni.showToast({ title: '请选择纪念日期', icon: 'none' })
-    return
-  }
+  try { parseBusinessDate(form.targetDate) }
+  catch { uni.showToast({ title: '请选择有效的纪念日期', icon: 'none' }); return }
 
+  // 点击时冻结本次保存内容，避免授权期间表单变化造成保存与订阅错配。
+  const payload = {
+    title: form.title.trim(), eventType: form.eventType, targetDate: form.targetDate,
+    repeatType: form.repeatType, reminderOffsetDays: [...form.reminderOffsetDays],
+    note: form.note.trim(), pinned: form.pinned
+  }
+  const shouldSubscribe = payload.reminderOffsetDays.length > 0
+    && (!isEdit.value || reminderKey(payload.targetDate, payload.reminderOffsetDays) !== originalReminderKey)
+  const wasEdit = isEdit.value
+  let accepted = false
+  let reminderMessage = ''
+  let saved = false
   saving.value = true
   try {
-    const payload = {
-      title: form.title.trim(),
-      eventType: form.eventType,
-      targetDate: form.targetDate,
-      repeatType: form.repeatType,
-      reminderOffsetDays: form.reminderOffsetDays,
-      note: form.note.trim(),
-      pinned: form.pinned
+    if (shouldSubscribe) {
+      if (reminderTemplateId.value) {
+        // 直接由保存按钮的点击触发，不在微信授权之前等待保存接口。
+        try { await requestReminderSubscription(reminderTemplateId.value); accepted = true }
+        catch (e) { reminderMessage = e instanceof Error ? e.message : '未同意微信订阅，本次未开启提醒' }
+      } else {
+        reminderMessage = '订阅模板暂未加载成功，本次未开启提醒。可到“我的 → 通知消息管理”开启。'
+      }
     }
-
-    if (isEdit.value) {
+    if (wasEdit) {
       await updateAnniversary({ id: editId.value, revision: editRevision.value, ...payload })
+      editRevision.value++
     } else {
-      await createAnniversary(payload)
+      const created = await createAnniversary(payload)
+      editId.value = created._id
+      editRevision.value = created.revision
     }
-
-    saving.value = false
-    uni.showToast({ title: isEdit.value ? '修改成功' : '添加成功', icon: 'success' })
-    setTimeout(() => uni.navigateBack(), 1200)
-  } catch (error) {
-    saving.value = false
-    const message = error instanceof Error ? error.message : '保存失败'
-    uni.showToast({ title: message, icon: 'none' })
+    saved = true
+    originalReminderKey = reminderKey(payload.targetDate, payload.reminderOffsetDays)
+    if (accepted) {
+      try {
+        const plan = await prepareReminder(editId.value)
+        if (plan.templateId !== reminderTemplateId.value) throw new Error('订阅模板已更新，请到通知消息管理重新开启')
+        if (plan.available && plan.nonce) {
+          const label = await confirmReminder(editId.value, plan.nonce)
+          reminderMessage = '本次提醒已安排在 ' + label + '（北京时间）。'
+        } else if (plan.status === 'pending') {
+          reminderMessage = '本次提醒已开启，时间为 ' + plan.label + '（北京时间）。'
+        } else {
+          throw new Error(plan.message || '未能安排本次提醒，请到通知消息管理重新开启')
+        }
+      } catch (e) {
+        reminderMessage = '纪念日已保存，但提醒安排未确认。' + (e instanceof Error ? e.message : '请到通知消息管理查看状态。')
+      }
+    }
+    const leave = () => {
+      if (wasEdit) uni.navigateBack()
+      else uni.redirectTo({ url: '/pages/anniversary/detail?id=' + encodeURIComponent(editId.value) })
+    }
+    if (reminderMessage) {
+      uni.showModal({ title: '纪念日已保存', content: reminderMessage, showCancel: false, confirmText: '知道了', complete: leave })
+    } else {
+      uni.showToast({ title: wasEdit ? '修改成功' : '添加成功', icon: 'success' })
+      setTimeout(leave, 1200)
+    }
+  } catch (e) {
+    uni.showToast({ title: e instanceof Error ? e.message : '保存失败', icon: 'none' })
+  } finally {
+    if (!saved) saving.value = false
   }
 }
 </script>
@@ -859,3 +907,6 @@ async function onSave() {
   box-shadow: 0 8rpx 20rpx rgba(208, 96, 91, 0.2);
 }
 </style>
+
+
+

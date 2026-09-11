@@ -130,6 +130,7 @@ interface MenuItem {
 const menuGroups: MenuItem[][] = [
   [
     { label: '恋爱资料', icon: 'contact', caption: '个人资料与恋爱日期' },
+    { label: '通知消息管理', icon: 'notification', caption: '纪念日订阅提醒' },
     { label: '分享恋时光', icon: 'redo', caption: '把这份爱分享给更多人', share: true }
   ],
   [
@@ -139,6 +140,7 @@ const menuGroups: MenuItem[][] = [
 ]
 
 const routeByMenu: Record<string, string> = {
+  通知消息管理: '/pages/settings/reminder',
   隐私与协议: '/pages/settings/privacy',
   关于恋时光: '/pages/settings/about'
 }
@@ -314,3 +316,4 @@ function openMenu(label: string) {
   .page-signature { min-height: 60rpx; }
 }
 </style>
+

@@ -22,13 +22,13 @@
           <image class="title-type-icon" :src="typeIconSrc" mode="aspectFit" />
           <text class="hero-title">{{ anniversary?.title || '' }}</text>
         </view>
-        <text class="hero-subtitle">{{ daysLeft === 0 ? '期待的日子' : '距离下一次纪念日' }}</text>
+        <text class="hero-subtitle">{{ daysLeft === 0 ? '期待的日子' : daysLeft < 0 ? '这个日子已经过去' : '距离目标日还有' }}</text>
         <view class="days-row">
           <template v-if="daysLeft === 0">
             <text class="days-number today-label">就是今天</text>
           </template>
           <template v-else>
-            <text class="days-number">{{ daysLeft }}</text>
+            <text class="days-number">{{ Math.abs(daysLeft) }}</text>
             <text class="days-unit">天</text>
           </template>
         </view>
@@ -51,14 +51,6 @@
       </view>
       <view class="info-divider" />
       <view class="info-row">
-        <text class="info-label">已经相伴</text>
-        <view class="info-value-highlight">
-          <text class="highlight-number">{{ togetherDays }}</text>
-          <text class="highlight-unit">天</text>
-        </view>
-      </view>
-      <view class="info-divider" />
-      <view class="info-row">
         <text class="info-label">重复方式</text>
         <text class="info-value">{{ repeatLabel }}</text>
       </view>
@@ -73,6 +65,7 @@
         <text class="info-value">{{ anniversary?.note || '暂无备注' }}</text>
       </view>
     </view>
+
 
     <!-- 底部按钮 -->
     <view class="action-buttons">
@@ -121,7 +114,7 @@ const pageStyle = {
   '--menu-height': `${navigationMetrics.height}px`
 }
 
-const today = formatBusinessDate(new Date())
+const today = ref(formatBusinessDate(new Date()))
 
 const typeIconSrc = computed(() => {
   const iconMap = {
@@ -137,17 +130,17 @@ const daysLeft = computed(() => {
   if (!anniversary.value) return 0
   const target = anniversary.value.targetDate
   if (anniversary.value.repeatType === 'yearly') {
-    const next = getNextYearlyOccurrence(target, today)
-    return Math.max(0, differenceInCalendarDays(next, today))
+    const next = getNextYearlyOccurrence(target, today.value)
+    return differenceInCalendarDays(next, today.value)
   }
-  return Math.max(0, differenceInCalendarDays(target, today))
+  return differenceInCalendarDays(target, today.value)
 })
 
 const displayTargetDate = computed(() => {
   if (!anniversary.value) return ''
   const target = anniversary.value.targetDate
   if (anniversary.value.repeatType === 'yearly') {
-    return getNextYearlyOccurrence(target, today).replace(/-/g, '.')
+    return getNextYearlyOccurrence(target, today.value).replace(/-/g, '.')
   }
   return target.replace(/-/g, '.')
 })
@@ -157,7 +150,7 @@ const weekday = computed(() => {
   const target = anniversary.value.targetDate
   let dateStr = target
   if (anniversary.value.repeatType === 'yearly') {
-    dateStr = getNextYearlyOccurrence(target, today)
+    dateStr = getNextYearlyOccurrence(target, today.value)
   }
   const date = new Date(dateStr.replace(/-/g, '/'))
   const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -169,11 +162,6 @@ const displayStartDate = computed(() => {
   return anniversary.value.targetDate.replace(/-/g, '.')
 })
 
-const togetherDays = computed(() => {
-  if (!anniversary.value) return 0
-  return Math.max(0, differenceInCalendarDays(today, anniversary.value.targetDate))
-})
-
 const repeatLabel = computed(() => {
   return anniversary.value?.repeatType === 'yearly' ? '每年' : '不重复'
 })
@@ -183,7 +171,7 @@ const reminderLabel = computed(() => {
   const offsets = anniversary.value.reminderOffsetDays || []
   if (offsets.length === 0) return '不提醒'
   const map: Record<number, string> = { 0: '当天', 1: '提前 1 天', 3: '提前 3 天', 7: '提前 7 天' }
-  return offsets.map(d => map[d] || `提前 ${d} 天`).join('、')
+  return offsets.map(d => map[d] || `提前 ${d} 天`).join('、') + ' ' + anniversary.value.reminderTime
 })
 
 async function loadAnniversaryDetail() {
@@ -212,6 +200,7 @@ onLoad((options) => {
 // 编辑页保存后通过 navigateBack 返回时，详情页不会再次触发 onLoad，
 // 因此在每次重新显示页面时从数据库获取最新数据。
 onShow(() => {
+  today.value = formatBusinessDate(new Date())
   void loadAnniversaryDetail()
 })
 
@@ -247,14 +236,14 @@ async function onDelete() {
 
 <style scoped lang="scss">
 .detail-page {
-  position: fixed;
+  position: relative;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
   box-sizing: border-box;
   padding-bottom: calc(var(--love-safe-bottom) + 20rpx);
-  overflow: hidden;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 88% 10%, rgba(255, 251, 246, 0.72), transparent 34%),
     linear-gradient(180deg, #fbf2e9 0%, #fcf7f1 46%, #faf4ec 100%);
@@ -422,24 +411,6 @@ async function onDelete() {
   font-size: 28rpx;
   line-height: 1.4;
   text-align: right;
-}
-
-.info-value-highlight {
-  display: flex;
-  align-items: baseline;
-  gap: 9rpx;
-}
-
-.highlight-number {
-  color: #dc7771;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 39rpx;
-  font-weight: 500;
-}
-
-.highlight-unit {
-  color: #625249;
-  font-size: 27rpx;
 }
 
 .info-divider {
@@ -611,4 +582,14 @@ async function onDelete() {
     line-height: 82rpx;
   }
 }
+.detail-page {
+  position: relative;
+  height: auto;
+  min-height: 100vh;
+  overflow-y: visible;
+  padding-bottom: calc(var(--love-safe-bottom, 0px) + 48rpx);
+}
 </style>
+
+
+

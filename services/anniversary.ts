@@ -17,7 +17,7 @@ export interface AnniversaryListItem {
 }
 
 interface AnniversaryCloudObject {
-  list(params: { cursor?: string }): Promise<ApiResult<CursorPage<AnniversaryListItem>>>
+  list(params: { cursor?: string; cursorOrder?: boolean }): Promise<ApiResult<CursorPage<AnniversaryListItem>>>
   detail(params: { id: string }): Promise<ApiResult<AnniversaryListItem>>
   create(params: CreateAnniversaryParams): Promise<ApiResult<AnniversaryListItem>>
   update(params: UpdateAnniversaryParams): Promise<ApiResult<{ _id: string }>>
@@ -41,8 +41,8 @@ export interface UpdateAnniversaryParams extends Partial<CreateAnniversaryParams
 
 const anniversaryCo = createCloudObject<AnniversaryCloudObject>('anniversary-co')
 
-export async function listAnniversaries(cursor?: string): Promise<CursorPage<AnniversaryListItem>> {
-  const result = await anniversaryCo.list({ cursor })
+export async function listAnniversaries(cursor?: string, cursorOrder = false): Promise<CursorPage<AnniversaryListItem>> {
+  const result = await anniversaryCo.list({ cursor, cursorOrder })
   if (result.code !== 0 || !result.data) throw new Error(result.message || '纪念日列表加载失败')
   return result.data
 }
@@ -68,3 +68,4 @@ export async function removeAnniversary(id: string): Promise<void> {
   const result = await anniversaryCo.remove({ id })
   if (result.code !== 0) throw new Error(result.message || '纪念日删除失败')
 }
+

@@ -139,7 +139,7 @@ const iconMap: Record<Exclude<FilterValue, 'all'>, string> = {
 const activeFilter = ref<FilterValue>('all')
 const allItems = ref<DisplayItem[]>([])
 const loading = ref(false)
-const today = formatBusinessDate(new Date())
+const today = ref(formatBusinessDate(new Date()))
 
 const filteredItems = computed(() => {
   if (activeFilter.value === 'all') return allItems.value
@@ -147,7 +147,7 @@ const filteredItems = computed(() => {
 })
 
 const groupedItems = computed<MonthGroup[]>(() => {
-  const currentYear = today.slice(0, 4)
+  const currentYear = today.value.slice(0, 4)
   const groups = new Map<string, DisplayItem[]>()
 
   filteredItems.value.forEach((item) => {
@@ -170,9 +170,9 @@ const groupedItems = computed<MonthGroup[]>(() => {
 
 function toDisplayItem(item: AnniversaryListItem): DisplayItem {
   const occurrenceDate = item.repeatType === 'yearly'
-    ? getNextYearlyOccurrence(item.targetDate, today)
+    ? getNextYearlyOccurrence(item.targetDate, today.value)
     : item.targetDate
-  const daysDiff = differenceInCalendarDays(occurrenceDate, today)
+  const daysDiff = differenceInCalendarDays(occurrenceDate, today.value)
 
   return {
     ...item,
@@ -217,6 +217,7 @@ async function loadAllItems() {
 }
 
 onShow(async () => {
+  today.value = formatBusinessDate(new Date())
   const loggedIn = await restoreWeixinSession()
   if (!loggedIn) {
     uni.showToast({ title: '暂时无法连接服务', icon: 'none' })
@@ -553,3 +554,4 @@ function goToAdd() {
   }
 }
 </style>
+
