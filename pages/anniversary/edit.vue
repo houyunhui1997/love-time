@@ -130,8 +130,10 @@
     <!-- 底部按钮 -->
     <view class="action-area">
       <button class="save-button" :disabled="saving || templateLoading || !formLoaded" @tap="onSave">
-        <LoveLoading v-if="saving" size="mini" text="" :mask="false" />
-        <text>{{ saving ? '保存中...' : '保存纪念日' }}</text>
+        <view v-if="saving" class="save-button-loading">
+          <LoveLoading size="mini" text="" :mask="false" />
+        </view>
+        <text class="save-button-label">{{ saving ? '保存中...' : '保存纪念日' }}</text>
       </button>
       <text class="save-tip">设置提醒后，保存时会请求微信订阅授权</text>
     </view>
@@ -731,7 +733,7 @@ async function onSave() {
   background: linear-gradient(135deg, #eb7e77 0%, #dd696b 100%);
   color: #fff;
   font-size: 32rpx;
-  line-height: 86rpx;
+  line-height: normal;
   font-weight: 500;
   border: none;
   box-shadow: 0 12rpx 28rpx rgba(208, 96, 91, 0.24);
@@ -744,6 +746,20 @@ async function onSave() {
     opacity: 0.9;
     transform: scale(0.98);
   }
+}
+
+.save-button-loading {
+  display: flex;
+  width: 52rpx;
+  height: 52rpx;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.save-button-label {
+  line-height: 1;
 }
 
 .save-tip {
@@ -819,7 +835,6 @@ async function onSave() {
 
   .save-button {
     height: 76rpx;
-    line-height: 76rpx;
   }
 }
 

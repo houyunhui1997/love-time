@@ -70,7 +70,9 @@
       </view>
 
       <button class="login-button" :disabled="submitting || loadingData" @tap="confirmProfile">
-        <LoveLoading v-if="submitting" size="mini" text="" :mask="false" />
+        <view v-if="submitting" class="login-button-loading">
+          <LoveLoading size="mini" text="" :mask="false" />
+        </view>
         <text class="login-button-label" :class="{ spaced: !submitting }">
           {{ submitting ? '保存中…' : '保存' }}
         </text>
@@ -398,11 +400,25 @@ async function confirmProfile() {
   color: #ffffff;
   font-size: 28rpx;
   font-weight: 600;
-  line-height: 84rpx;
+  line-height: normal;
 
   &::after {
     border: 0;
   }
+}
+
+.login-button-loading {
+  display: flex;
+  width: 52rpx;
+  height: 52rpx;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.login-button-label {
+  line-height: 1;
 }
 
 .login-button-label.spaced {
@@ -441,7 +457,6 @@ async function confirmProfile() {
   .login-button {
     height: 78rpx;
     margin-top: 24rpx;
-    line-height: 78rpx;
   }
 
   .agreement {

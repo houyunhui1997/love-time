@@ -135,8 +135,9 @@ withDefaults(
 }
 
 .love-loading--mini {
-  display: inline-flex;
+  display: flex;
   flex-direction: row;
+  line-height: 0;
 
   .love-loading__visual {
     width: 52rpx;
