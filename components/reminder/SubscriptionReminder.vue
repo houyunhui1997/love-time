@@ -8,18 +8,19 @@
       <text class="status-badge" :class="{ active: isEnabled, attention: attentionNeeded }">{{ badgeText }}</text>
     </view>
     <view class="schedule-panel">
+      <image class="reminder-sprig" src="/static/reminder/ivory-flower-sprig.png" mode="aspectFit" aria-hidden="true" />
       <view class="schedule-heading"><uni-icons type="calendar" size="16" color="#a68d7c" /><text>{{ scheduleTitle }}</text></view>
       <view v-if="plan?.label" class="schedule-value"><text class="schedule-date">{{ scheduleDate }}</text><text class="schedule-time">{{ scheduleTime }}</text></view>
       <text v-else class="schedule-placeholder">{{ busy ? '正在读取提醒时间…' : '暂未安排提醒' }}</text>
-      <text class="schedule-description">{{ reminderLabel }} · 北京时间</text>
+      <text class="schedule-description">{{ reminderLabel }}</text>
     </view>
     <text v-if="attentionNeeded && !error" class="attention-copy">{{ statusText }}</text>
     <text v-if="error" class="error">{{ error }}</text>
     <view class="card-footer">
       <button class="edit-link" :disabled="busy" @tap="editReminder"><uni-icons type="compose" size="16" color="#a48a79" /><text>修改提醒</text></button>
       <view class="row-actions">
-        <button v-if="acceptedNonce" :disabled="busy" class="primary" @tap="saveAccepted">重试保存</button>
-        <button v-else-if="busy" class="primary" disabled>处理中…</button>
+        <button v-if="busy" class="primary" disabled>处理中…</button>
+        <button v-else-if="acceptedNonce && error" class="primary" @tap="saveAccepted">重试保存</button>
         <button v-else-if="error" class="primary" @tap="load">重新加载</button>
         <button v-else-if="plan?.available" class="primary" @tap="subscribe">开启本次提醒</button>
         <button v-else-if="plan?.status === 'pending'" class="secondary" @tap="cancel">取消本次提醒</button>
@@ -98,7 +99,7 @@ async function subscribe() {
   finally { busy.value = false }
 }
 async function saveAccepted() {
-  if (busy.value) return
+  if (busy.value || !acceptedNonce.value || !error.value) return
   busy.value = true
   error.value = ''
   try { await persistAccepted() }
@@ -119,37 +120,39 @@ async function cancel() {
 watch(() => [props.id, props.revision], () => { acceptedNonce.value = ''; void load() }, { immediate: true })
 </script>
 <style scoped>
-.reminder-card { padding: 28rpx; border: 1rpx solid #eee5dc; border-radius: 28rpx; background: #fffdf9; box-shadow: 0 8rpx 24rpx rgba(96,69,49,.035); }
-.card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16rpx; }
+.reminder-card { position: relative; padding: 22rpx 24rpx 18rpx; border: 1rpx solid rgba(255,255,255,.9); border-radius: 28rpx; background: rgba(252,247,241,.78); box-shadow: inset 0 2rpx 0 rgba(255,255,255,.68), 0 12rpx 30rpx rgba(103,73,54,.08); backdrop-filter: blur(18rpx) saturate(112%); -webkit-backdrop-filter: blur(18rpx) saturate(112%); }
+.card-header { display: flex; align-items: center; justify-content: space-between; gap: 14rpx; }
 .event-heading { display: flex; align-items: center; flex: 1; min-width: 0; gap: 14rpx; }
-.type-icon { width: 68rpx; height: 68rpx; flex: 0 0 68rpx; }
+.type-icon { width: 62rpx; height: 62rpx; flex: 0 0 62rpx; }
 .event-copy { flex: 1; min-width: 0; }
-.event-title { display: block; color: #5b463a; font-size: 30rpx; line-height: 1.4; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.event-date { display: block; margin-top: 5rpx; color: #ad9787; font-size: 22rpx; line-height: 1.6; }
-.status-badge { flex-shrink: 0; margin-top: 5rpx; padding: 7rpx 16rpx; border-radius: 25rpx; background: #f0ebe5; color: #a29182; font-size: 22rpx; line-height: 1.4; }
-.status-badge.active { background: #edf0e7; color: #7c8b68; }
+.event-title { display: block; color: #554238; font-size: 29rpx; line-height: 1.35; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.event-date { display: block; margin-top: 4rpx; color: #a18c7b; font-size: 22rpx; line-height: 1.5; }
+.status-badge { flex-shrink: 0; padding: 7rpx 16rpx; border-radius: 25rpx; background: rgba(232,225,217,.8); color: #9a887b; font-size: 22rpx; line-height: 1.4; }
+.status-badge.active { background: rgba(227,233,218,.85); color: #82926f; }
 .status-badge.attention { background: #faeee0; color: #b58d56; }
-.schedule-panel { margin-top: 24rpx; padding: 22rpx 24rpx; border-radius: 20rpx; background: #f8f3ed; }
-.enabled .schedule-panel { background: #f8f2ec; }
-.schedule-heading { display: flex; align-items: center; gap: 10rpx; color: #a28b7b; font-size: 23rpx; }
-.schedule-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 22rpx; margin-top: 16rpx; }
-.schedule-date { color: #785a49; font-size: 37rpx; font-weight: 550; line-height: 1.3; font-variant-numeric: tabular-nums; }
-.schedule-time { color: #bd746b; font-size: 37rpx; font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; }
-.schedule-placeholder { display: block; margin-top: 16rpx; color: #a38b7a; font-size: 28rpx; }
-.schedule-description { display: block; margin-top: 14rpx; color: #ab9585; font-size: 22rpx; line-height: 1.6; }
-.card-footer { display: flex; align-items: center; justify-content: space-between; gap: 20rpx; padding-top: 22rpx; }
+.schedule-panel { position: relative; margin-top: 16rpx; padding: 14rpx 70rpx 12rpx 18rpx; border-radius: 18rpx; background: linear-gradient(100deg,rgba(241,231,219,.43),rgba(253,249,243,.18)); overflow: hidden; }
+.reminder-sprig { position: absolute; right: 8rpx; bottom: 5rpx; width: 52rpx; height: 105rpx; opacity: .58; pointer-events: none; }
+.schedule-heading { display: flex; align-items: center; gap: 8rpx; color: #9e8574; font-size: 22rpx; line-height: 1.4; }
+.schedule-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 16rpx; margin-top: 8rpx; }
+.schedule-date { color: #bb776c; font-family: Georgia, 'Times New Roman', serif; font-size: 34rpx; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.schedule-time { border-left: 1rpx solid #dac2b0; padding-left: 16rpx; color: #bb776c; font-family: Georgia, 'Times New Roman', serif; font-size: 34rpx; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.schedule-placeholder { display: block; margin-top: 8rpx; color: #a38b7a; font-size: 25rpx; }
+.schedule-description { display: block; margin-top: 7rpx; color: #a38a78; font-size: 22rpx; line-height: 1.4; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding-top: 12rpx; }
 button { font-family: inherit; }
 button::after { border: 0; }
-.edit-link { display: flex; align-items: center; gap: 8rpx; margin: 0; padding: 10rpx 0; color: #a48a79; background: transparent; font-size: 24rpx; line-height: 1.5; }
+.edit-link { display: flex; align-items: center; gap: 8rpx; margin: 0; padding: 10rpx 0; color: #9c7d6b; background: transparent; font-size: 24rpx; line-height: 1.5; }
 .row-actions { flex-shrink: 0; }
-.primary, .secondary { margin: 0; min-width: 210rpx; padding: 0 22rpx; border-radius: 34rpx; font-size: 25rpx; line-height: 66rpx; }
-.primary { color: white; background: #cf8178; }
-.secondary { color: #a28574; background: transparent; border: 1rpx solid #e8d9cc; }
+.primary, .secondary { box-sizing: border-box; margin: 0; min-width: 196rpx; padding: 0 20rpx; border-radius: 34rpx; font-size: 24rpx; line-height: 58rpx; }
+.primary { color: #fffdf9; border: 1rpx solid transparent; background: linear-gradient(135deg,#d8998b,#c67c71); }
+.secondary { color: #ac8170; background: rgba(255,253,249,.36); border: 1rpx solid #d5a492; }
 button[disabled] { opacity: .55; }
-.attention-copy, .error { display: block; margin-top: 18rpx; font-size: 24rpx; line-height: 1.6; color: #b58a5d; overflow-wrap: anywhere; }
+.attention-copy, .error { display: block; margin-top: 12rpx; font-size: 23rpx; line-height: 1.6; color: #b58a5d; overflow-wrap: anywhere; }
 .error { color: #ba7065; }
-@media screen and (max-width: 350px) { .reminder-card { padding: 22rpx; } .primary, .secondary { min-width: 180rpx; padding: 0 16rpx; } .schedule-date, .schedule-time { font-size: 33rpx; } }
+@media screen and (max-width: 350px) { .reminder-card { padding: 20rpx; } .primary, .secondary { min-width: 180rpx; padding: 0 16rpx; } .schedule-panel { padding-right: 50rpx; } .schedule-date, .schedule-time { font-size: 31rpx; } .reminder-sprig { width: 38rpx; } }
+@supports not (backdrop-filter: blur(1px)) { .reminder-card { background: rgba(252,247,241,.93); } }
 </style>
+
 
 
 

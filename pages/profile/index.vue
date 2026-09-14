@@ -130,16 +130,17 @@ interface MenuItem {
 const menuGroups: MenuItem[][] = [
   [
     { label: '恋爱资料', icon: 'contact', caption: '个人资料与恋爱日期' },
+    { label: '经期记录', icon: 'calendar', caption: '记录自己的节奏' },
     { label: '通知消息管理', icon: 'notification', caption: '纪念日订阅提醒' },
     { label: '分享恋时光', icon: 'redo', caption: '把这份爱分享给更多人', share: true }
   ],
   [
-    { label: '隐私与协议', icon: 'locked' },
-    { label: '关于恋时光', icon: 'info' }
+    { label: '隐私与协议', icon: 'locked' }
   ]
 ]
 
 const routeByMenu: Record<string, string> = {
+  经期记录: '/pages/period/index',
   通知消息管理: '/pages/settings/reminder',
   隐私与协议: '/pages/settings/privacy',
   关于恋时光: '/pages/settings/about'

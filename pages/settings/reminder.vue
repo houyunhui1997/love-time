@@ -7,10 +7,13 @@
     <scroll-view class="page-scroll" scroll-y :show-scrollbar="false">
       <view class="page-content">
         <view class="overview">
-          <view class="overview-top"><view class="overview-icon"><uni-icons type="notification" size="25" color="#c47670" /></view><button class="rules-entry" @tap="showRules = true">订阅规则 <uni-icons type="right" size="13" color="#9c8074" /></button></view>
-          <text class="overview-title">重要的日子，准时提醒</text>
-          <view class="overview-summary"><text class="overview-number">{{ loading || loadError || unresolvedCount ? '—' : enabledCount }}</text><text class="overview-caption">项提醒已开启</text><text v-if="!loading && !loadError" class="overview-total">共 {{ items.length }} 个纪念日</text></view>
-          <text class="overview-note">每次订阅提醒一次 · 所有时间均为北京时间</text>
+          <view class="overview-summary">
+            <uni-icons type="notification" size="22" color="#c78375" />
+            <text class="overview-caption">已开启</text>
+            <text class="overview-number">{{ loading || loadError || unresolvedCount ? '—' : enabledCount }}</text>
+            <text class="overview-caption">项提醒</text>
+          </view>
+          <button class="rules-entry" @tap="showRules = true">订阅规则 <uni-icons type="right" size="15" color="#9c8074" /></button>
         </view>
         <view class="status-tabs">
           <button v-for="filter in filters" :key="filter.value" :class="['status-tab', { active: activeFilter === filter.value }]" @tap="activeFilter = filter.value">{{ filter.label }}<text class="tab-count">{{ filter.count }}</text></button>
@@ -29,6 +32,7 @@
             <SubscriptionReminder :id="item._id" :revision="item.revision" :title="item.title" :target-date="item.targetDate" :event-type="item.eventType" :reminder-label="reminderLabel(item)" @busy-change="onBusyChange" @status-change="onStatusChange" />
           </view>
         </view>
+        <text class="one-time-note">每次订阅提醒一次 · 所有时间均为北京时间</text>
         <button class="help-entry" @tap="openSettings"><uni-icons type="help" size="17" color="#a49388" /><text>收不到提醒？查看微信通知设置</text><uni-icons type="right" size="14" color="#a49388" /></button>
       </view>
     </scroll-view>
@@ -129,30 +133,26 @@ function openSettings() {
 onShow(() => { void load() })
 </script>
 <style scoped>
-.notification-page { position: fixed; inset: 0; display: flex; flex-direction: column; background: #f8f4ef; color: #514137; }
+.notification-page { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(circle at 8% 2%, rgba(247,205,197,.6), transparent 44%), linear-gradient(180deg,#f5ddd5 0%,#f9ebe3 18%,#fbf4ed 46%,#fcf8f3 100%); color: #55433a; }
 button { font-family: inherit; }
 button::after { border: 0; }
-.top-nav { position: relative; flex-shrink: 0; box-sizing: border-box; height: calc(var(--menu-top) + var(--menu-height) + 26rpx); padding-top: var(--menu-top); }
+.top-nav { position: relative; flex-shrink: 0; box-sizing: border-box; height: calc(var(--menu-top) + var(--menu-height) + 24rpx); padding-top: var(--menu-top); }
 .back-button { position: absolute; top: var(--menu-top); left: 28rpx; display: flex; align-items: center; justify-content: center; width: 64rpx; height: var(--menu-height); margin: 0; padding: 0; background: transparent; }
-.page-title { display: block; margin: 0 175rpx; height: var(--menu-height); font-size: 33rpx; font-weight: 600; line-height: var(--menu-height); text-align: center; white-space: nowrap; }
+.page-title { display: block; margin: 0 165rpx; height: var(--menu-height); font-size: 34rpx; font-weight: 600; line-height: var(--menu-height); text-align: center; white-space: nowrap; }
 .page-scroll { flex: 1; min-height: 0; height: 0; }
-.page-content { padding: 22rpx 32rpx calc(40rpx + env(safe-area-inset-bottom)); }
-.overview { padding: 28rpx 30rpx; border: 1rpx solid #f0ddd4; border-radius: 30rpx; background: linear-gradient(120deg, #f4e2da, #fbf0e7); }
-.overview-top { display: flex; align-items: center; justify-content: space-between; }
-.overview-icon { display: flex; width: 66rpx; height: 66rpx; align-items: center; justify-content: center; border-radius: 22rpx; background: rgba(255,255,255,.55); }
-.rules-entry { display: flex; align-items: center; gap: 8rpx; margin: 0; padding: 12rpx 0 12rpx 20rpx; background: transparent; color: #9c8074; font-size: 24rpx; line-height: 1.4; }
-.overview-title { display: block; margin-top: 18rpx; color: #6d5045; font-size: 33rpx; font-weight: 600; letter-spacing: 1rpx; }
-.overview-summary { display: flex; align-items: baseline; margin-top: 22rpx; gap: 10rpx; }
-.overview-number { color: #b86c65; font-size: 56rpx; font-weight: 600; line-height: 1; }
-.overview-caption { color: #806658; font-size: 26rpx; }
-.overview-total { margin-left: auto; color: #a3897a; font-size: 23rpx; }
-.overview-note { display: block; margin-top: 20rpx; color: #a08474; font-size: 22rpx; line-height: 1.6; }
-.status-tabs { display: flex; gap: 6rpx; padding: 7rpx; margin: 30rpx 0 24rpx; border-radius: 22rpx; background: #eee7df; }
-.status-tab { flex: 1; min-width: 0; margin: 0; padding: 0 8rpx; border-radius: 17rpx; background: transparent; color: #9c8a7d; font-size: 25rpx; line-height: 66rpx; }
-.status-tab.active { background: #fffcf8; color: #79564b; box-shadow: 0 3rpx 10rpx rgba(92,62,43,.06); font-weight: 600; }
-.tab-count { margin-left: 10rpx; font-size: 22rpx; opacity: .75; }
+.page-content { padding: 16rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); }
+.overview { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; padding: 18rpx 12rpx; min-height: 64rpx; }
+.overview-summary { display: flex; align-items: center; gap: 10rpx; }
+.overview-caption { color: #7e6151; font-size: 28rpx; }
+.overview-number { color: #c47c72; font-family: Georgia, 'Times New Roman', serif; font-size: 42rpx; line-height: 1; }
+.rules-entry { display: flex; align-items: center; gap: 5rpx; margin: 0; padding: 14rpx 0 14rpx 10rpx; background: transparent; color: #a17f6e; font-size: 25rpx; line-height: 1.5; }
+.status-tabs { display: flex; gap: 6rpx; padding: 7rpx; margin: 10rpx 0 22rpx; border: 1rpx solid rgba(255,255,255,.6); border-radius: 24rpx; background: rgba(233,224,214,.65); }
+.status-tab { flex: 1; min-width: 0; margin: 0; padding: 0 8rpx; border-radius: 18rpx; background: transparent; color: #a18d7e; font-size: 26rpx; line-height: 62rpx; }
+.status-tab.active { background: rgba(255,253,249,.92); color: #795447; box-shadow: 0 3rpx 10rpx rgba(92,62,43,.05); font-weight: 600; }
+.tab-count { margin-left: 10rpx; font-size: 23rpx; opacity: .8; }
 .reminder-item { margin-top: 20rpx; }
-.help-entry { display: flex; align-items: center; justify-content: center; gap: 10rpx; margin: 30rpx auto 0; padding: 14rpx 0; background: transparent; color: #a49388; font-size: 23rpx; line-height: 1.6; }
+.one-time-note { display: block; margin: 26rpx 0 0; text-align: center; color: #aa9483; font-size: 22rpx; line-height: 1.6; }
+.help-entry { display: flex; align-items: center; justify-content: center; gap: 8rpx; margin: 8rpx auto 0; padding: 14rpx 0; background: transparent; color: #a49388; font-size: 23rpx; line-height: 1.6; }
 .state-panel { display: flex; min-height: 260rpx; padding: 50rpx 20rpx; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .state-title { display: block; margin-top: 20rpx; color: #7d6759; font-size: 29rpx; font-weight: 500; }
 .state-text { margin-top: 14rpx; color: #a08d7d; font-size: 24rpx; line-height: 1.8; }
@@ -171,7 +171,9 @@ button::after { border: 0; }
 .settings-link { margin: 12rpx 0 24rpx; padding: 8rpx 0; text-align: left; background: transparent; color: #bf7869; font-size: 25rpx; line-height: 1.7; }
 .rules-confirm { width: 100%; flex-shrink: 0; height: 84rpx; margin-top: 20rpx; border-radius: 44rpx; background: linear-gradient(135deg, #e7847f, #d96766); color: white; font-size: 29rpx; line-height: 84rpx; }
 
+
 </style>
+
 
 
 

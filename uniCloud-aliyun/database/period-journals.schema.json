@@ -1,0 +1,24 @@
+{
+  "bsonType": "object",
+  "description": "本人经期档案，仅经鉴权的 period-co 可访问；按用户聚合并以版本号原子更新",
+  "required": ["records", "revision", "updatedAt"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false, "count": false },
+  "properties": {
+    "_id": { "bsonType": "string", "description": "uni-id 用户 ID" },
+    "records": {
+      "bsonType": "array",
+      "maxItems": 1000,
+      "items": {
+        "bsonType": "object",
+        "required": ["id", "startDate", "endDate"],
+        "properties": {
+          "id": { "bsonType": "string" },
+          "startDate": { "bsonType": "string" },
+          "endDate": { "bsonType": ["string", "null"] }
+        }
+      }
+    },
+    "revision": { "bsonType": "int" },
+    "updatedAt": { "bsonType": "long" }
+  }
+}

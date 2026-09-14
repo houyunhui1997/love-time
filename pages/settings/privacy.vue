@@ -58,7 +58,7 @@
 
           <view class="clause">
             <text class="clause-title">一、我们收集的信息</text>
-            <text class="clause-copy">为提供服务所必需，我们会使用微信 OpenID 识别你的服务身份，并保存你主动创建的恋爱资料、纪念日、时光内容与照片。头像、昵称等非必要资料仅在你主动填写或授权后处理。我们不会收集与服务无关的个人信息。</text>
+            <text class="clause-copy">为提供服务所必需，我们会使用微信 OpenID 识别你的服务身份，并保存你主动创建的恋爱资料、纪念日、时光内容与照片。使用经期记录时，我们会保存你主动填写的经期开始日期，用于展示历史和估算周期；这些记录仅本人可访问，不自动向伴侣共享。头像、昵称等非必要资料仅在你主动填写或授权后处理。我们不会收集与服务无关的个人信息。</text>
           </view>
           <view class="clause">
             <text class="clause-title">二、信息的使用</text>
