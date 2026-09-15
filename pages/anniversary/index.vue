@@ -57,12 +57,14 @@
       <!-- 最近纪念日 -->
       <view class="section-title">
         <view class="section-heading">
-          <text class="section-title-text">最近纪念日</text>
+          <view class="section-heading-row">
+            <text class="section-title-text">最近纪念日</text>
+            <view v-if="!empty" class="view-all" @tap="goToAll">
+              <text class="view-all-text">查看全部</text>
+              <view class="view-all-arrow" />
+            </view>
+          </view>
           <view class="title-line" />
-        </view>
-        <view v-if="!empty" class="view-all" @tap="goToAll">
-          <text class="view-all-text">查看全部</text>
-          <view class="view-all-arrow" />
         </view>
       </view>
 
@@ -195,7 +197,7 @@ const showProfileDialog = ref(false)
 
 function mapItem(item: AnniversaryListItem): AnniversaryItem {
   const isYearly = item.repeatType === 'yearly'
-  const nextDate = isYearly ? getNextYearlyOccurrence(item.targetDate, today.value) : item.targetDate
+  const nextDate = isYearly ? getNextYearlyOccurrence(item.targetDate, today.value, item.calendarType) : item.targetDate
   const daysLeft = differenceInCalendarDays(nextDate, today.value)
 
   const iconMap: Record<string, string> = {
@@ -226,10 +228,10 @@ async function loadData() {
     const page = await listAnniversaries()
     const sorted = [...page.list].sort((a, b) => {
       const aLeft = a.repeatType === 'yearly'
-        ? differenceInCalendarDays(getNextYearlyOccurrence(a.targetDate, today.value), today.value)
+        ? differenceInCalendarDays(getNextYearlyOccurrence(a.targetDate, today.value, a.calendarType), today.value)
         : differenceInCalendarDays(a.targetDate, today.value)
       const bLeft = b.repeatType === 'yearly'
-        ? differenceInCalendarDays(getNextYearlyOccurrence(b.targetDate, today.value), today.value)
+        ? differenceInCalendarDays(getNextYearlyOccurrence(b.targetDate, today.value, b.calendarType), today.value)
         : differenceInCalendarDays(b.targetDate, today.value)
       if ((aLeft < 0) !== (bLeft < 0)) return aLeft < 0 ? 1 : -1
       return aLeft < 0 ? bLeft - aLeft : aLeft - bLeft
@@ -491,13 +493,17 @@ function onProfileSaved(result: CompleteProfileResult) {
 .section-title {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
   margin: 0 58rpx 12rpx;
 }
 
 .section-heading {
   display: flex;
   flex-direction: column;
+}
+
+.section-heading-row {
+  display: flex;
+  align-items: center;
 }
 
 .section-title-text {
@@ -520,8 +526,9 @@ function onProfileSaved(result: CompleteProfileResult) {
   display: flex;
   align-items: center;
   gap: 10rpx;
-  min-height: 48rpx;
-  padding-top: 2rpx;
+  /* 内边距扩大点击热区，负边距抵消对布局的影响 */
+  margin: -20rpx -16rpx -20rpx 8rpx;
+  padding: 20rpx 16rpx;
 }
 
 .view-all-text {

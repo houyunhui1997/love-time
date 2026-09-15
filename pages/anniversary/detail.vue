@@ -33,6 +33,7 @@
           </template>
         </view>
         <text class="target-date">目标日 {{ displayTargetDate }} {{ weekday }}</text>
+        <text v-if="lunarLabel" class="lunar-note">{{ lunarLabel }}</text>
       </view>
       <view class="hero-illustration">
         <image
@@ -82,6 +83,7 @@ import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import { differenceInCalendarDays, formatBusinessDate, getNextYearlyOccurrence } from '@/utils/date'
+import { formatLunarDate, solarToLunar } from '@/utils/lunar'
 import { getAnniversary, removeAnniversary, type AnniversaryListItem } from '@/services/anniversary'
 
 const anniversary = ref<AnniversaryListItem | null>(null)
@@ -130,7 +132,7 @@ const daysLeft = computed(() => {
   if (!anniversary.value) return 0
   const target = anniversary.value.targetDate
   if (anniversary.value.repeatType === 'yearly') {
-    const next = getNextYearlyOccurrence(target, today.value)
+    const next = getNextYearlyOccurrence(target, today.value, anniversary.value.calendarType)
     return differenceInCalendarDays(next, today.value)
   }
   return differenceInCalendarDays(target, today.value)
@@ -140,9 +142,27 @@ const displayTargetDate = computed(() => {
   if (!anniversary.value) return ''
   const target = anniversary.value.targetDate
   if (anniversary.value.repeatType === 'yearly') {
-    return getNextYearlyOccurrence(target, today.value).replace(/-/g, '.')
+    return getNextYearlyOccurrence(target, today.value, anniversary.value.calendarType).replace(/-/g, '.')
   }
   return target.replace(/-/g, '.')
+})
+
+const lunarLabel = computed(() => {
+  if (!anniversary.value) return ''
+  const item = anniversary.value
+  const source = item.repeatType === 'yearly'
+    ? getNextYearlyOccurrence(item.targetDate, today.value, item.calendarType)
+    : item.targetDate
+  try {
+    if (item.calendarType === 'lunar') {
+      return item.repeatType === 'yearly'
+        ? `每年农历 ${formatLunarDate(solarToLunar(source))}`
+        : `农历 ${formatLunarDate(solarToLunar(source), true)}`
+    }
+    return `农历 ${formatLunarDate(solarToLunar(source))}`
+  } catch {
+    return ''
+  }
 })
 
 const weekday = computed(() => {
@@ -150,7 +170,7 @@ const weekday = computed(() => {
   const target = anniversary.value.targetDate
   let dateStr = target
   if (anniversary.value.repeatType === 'yearly') {
-    dateStr = getNextYearlyOccurrence(target, today.value)
+    dateStr = getNextYearlyOccurrence(target, today.value, anniversary.value.calendarType)
   }
   const date = new Date(dateStr.replace(/-/g, '/'))
   const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -361,6 +381,13 @@ async function onDelete() {
   line-height: 1.4;
 }
 
+.lunar-note {
+  margin-top: 6rpx;
+  color: #a08d7e;
+  font-size: 22rpx;
+  line-height: 1.35;
+}
+
 .hero-illustration {
   position: absolute;
   top: 2rpx;
@@ -512,6 +539,11 @@ async function onDelete() {
   .target-date {
     margin-top: 22rpx;
     font-size: 25rpx;
+  }
+
+  .lunar-note {
+    margin-top: 4rpx;
+    font-size: 21rpx;
   }
 
   .hero-illustration {

@@ -1,7 +1,7 @@
 'use strict'
 
 const uniIdCommon = require('uni-id-common')
-const { offsets, parseDate } = require('love-reminder')
+const { offsets, parseDate, solarToLunar } = require('love-reminder')
 const { success, normalizeError, AppError, API_CODE, requireString } = require('love-common')
 const db = uniCloud.database()
 const dbCmd = db.command
@@ -9,6 +9,7 @@ const anniversaries = db.collection('anniversaries')
 
 const EVENT_TYPES = ['countdown', 'anniversary', 'birthday']
 const REPEAT_TYPES = ['none', 'yearly']
+const CALENDAR_TYPES = ['solar', 'lunar']
 const REMINDER_OFFSETS = [0, 1, 3, 7]
 const PAGE_SIZE = 20
 
@@ -24,6 +25,7 @@ function toClient(item) {
     title: item.title,
     eventType: item.eventType,
     targetDate: item.targetDate,
+    calendarType: item.calendarType === 'lunar' ? 'lunar' : 'solar',
     repeatType: item.repeatType,
     reminderOffsetDays: offsets(item),
     reminderTime: item.reminderTime || '09:00',
@@ -44,6 +46,11 @@ function validatePayload(params, { partial = false } = {}) {
       throw new AppError(API_CODE.INVALID_PARAMS, '纪念日期格式不正确')
     }
     try { parseDate(params.targetDate) } catch (_) { throw new AppError(API_CODE.INVALID_PARAMS, '纪念日期不存在') }
+  }
+  if (!partial || params.calendarType !== undefined) {
+    if (params.calendarType !== undefined && !CALENDAR_TYPES.includes(params.calendarType)) {
+      throw new AppError(API_CODE.INVALID_PARAMS, '日期类型不正确')
+    }
   }
   if (!partial || params.repeatType !== undefined) {
     if (params.repeatType !== undefined && !REPEAT_TYPES.includes(params.repeatType)) {
@@ -109,13 +116,16 @@ module.exports = {
     try {
       const auth = await requireAuth(this)
       validatePayload(params)
+      if (params.calendarType === 'lunar') {
+        try { solarToLunar(params.targetDate) } catch (_) { throw new AppError(API_CODE.INVALID_PARAMS, '农历日期需在 1901-2099 年范围内') }
+      }
       const now = Date.now()
       const record = {
         creatorUid: auth.uid,
         title: params.title,
         eventType: params.eventType,
         targetDate: params.targetDate,
-        calendarType: 'solar',
+        calendarType: params.calendarType === 'lunar' ? 'lunar' : 'solar',
         repeatType: params.repeatType,
         reminderOffsetDays: params.reminderOffsetDays || [],
         reminderTime: params.reminderTime === undefined ? '09:00' : params.reminderTime,
@@ -149,12 +159,17 @@ module.exports = {
       if (existing.creatorUid !== auth.uid) throw new AppError(API_CODE.FORBIDDEN, '无权修改该纪念日')
       if (existing.subscription && existing.subscription.status === 'sending') throw new AppError(API_CODE.INVALID_PARAMS, '提醒正在发送，请稍后修改')
       const patch = {}
-      for (const key of ['title', 'eventType', 'targetDate', 'repeatType', 'reminderOffsetDays', 'reminderTime', 'note', 'pinned']) {
+      for (const key of ['title', 'eventType', 'targetDate', 'calendarType', 'repeatType', 'reminderOffsetDays', 'reminderTime', 'note', 'pinned']) {
         if (params[key] !== undefined) patch[key] = params[key]
       }
       validatePayload(patch, { partial: true })
+      const nextCalendarType = patch.calendarType !== undefined ? patch.calendarType : (existing.calendarType === 'lunar' ? 'lunar' : 'solar')
+      if (nextCalendarType === 'lunar') {
+        try { solarToLunar(patch.targetDate !== undefined ? patch.targetDate : existing.targetDate) } catch (_) { throw new AppError(API_CODE.INVALID_PARAMS, '农历日期需在 1901-2099 年范围内') }
+      }
       const nextOffsets = patch.reminderOffsetDays || offsets(existing)
       const scheduleChanged = (patch.targetDate !== undefined && patch.targetDate !== existing.targetDate)
+        || (patch.calendarType !== undefined && patch.calendarType !== (existing.calendarType || 'solar'))
         || (patch.reminderTime !== undefined && patch.reminderTime !== (existing.reminderTime || '09:00'))
         || JSON.stringify(nextOffsets) !== JSON.stringify(offsets(existing))
       // 名称、备注、置顶及重复展示方式不改变已安排的订阅。

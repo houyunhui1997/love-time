@@ -170,7 +170,7 @@ const groupedItems = computed<MonthGroup[]>(() => {
 
 function toDisplayItem(item: AnniversaryListItem): DisplayItem {
   const occurrenceDate = item.repeatType === 'yearly'
-    ? getNextYearlyOccurrence(item.targetDate, today.value)
+    ? getNextYearlyOccurrence(item.targetDate, today.value, item.calendarType)
     : item.targetDate
   const daysDiff = differenceInCalendarDays(occurrenceDate, today.value)
 

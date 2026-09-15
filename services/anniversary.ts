@@ -1,5 +1,5 @@
 import type { ApiResult, CursorPage } from '@/types/api'
-import type { AnniversaryType, AnniversaryRepeat } from '@/types/domain'
+import type { AnniversaryType, AnniversaryRepeat, AnniversaryCalendar } from '@/types/domain'
 import { createCloudObject } from './cloud'
 
 export interface AnniversaryListItem {
@@ -7,6 +7,7 @@ export interface AnniversaryListItem {
   title: string
   eventType: AnniversaryType
   targetDate: string
+  calendarType: AnniversaryCalendar
   repeatType: AnniversaryRepeat
   reminderOffsetDays: number[]
   reminderTime: string
@@ -28,6 +29,7 @@ export interface CreateAnniversaryParams {
   title: string
   eventType: AnniversaryType
   targetDate: string
+  calendarType?: AnniversaryCalendar
   repeatType: AnniversaryRepeat
   reminderOffsetDays: number[]
   reminderTime?: string

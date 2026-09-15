@@ -1,3 +1,5 @@
+import { getNextLunarOccurrence, type CalendarType } from './lunar'
+
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 export function parseBusinessDate(value: string): Date {
@@ -32,7 +34,11 @@ export function differenceInCalendarDays(later: string, earlier: string): number
   return Math.round((utcLater - utcEarlier) / 86_400_000)
 }
 
-export function getNextYearlyOccurrence(targetDate: string, today: string): string {
+export function getNextYearlyOccurrence(targetDate: string, today: string, calendarType: CalendarType = 'solar'): string {
+  if (calendarType === 'lunar') {
+    return getNextLunarOccurrence(targetDate, today)
+  }
+
   const source = parseBusinessDate(targetDate)
   const current = parseBusinessDate(today)
   const month = source.getMonth()

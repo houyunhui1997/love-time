@@ -39,13 +39,33 @@
       </view>
       <view class="form-divider" />
 
+      <!-- 日期类型 -->
+      <view class="form-row">
+        <text class="form-label">日期类型</text>
+        <view class="type-options">
+          <view
+            v-for="opt in calendarOptions"
+            :key="opt.value"
+            class="type-tag"
+            :class="{ active: form.calendarType === opt.value }"
+            @tap="selectCalendarType(opt.value)"
+          >
+            {{ opt.label }}
+          </view>
+        </view>
+      </view>
+      <view class="form-divider" />
+
       <!-- 纪念日期 -->
       <view class="form-row" @tap="openDatePicker">
         <text class="form-label">纪念日期</text>
         <view class="form-value-row">
-          <text class="form-value" :class="{ placeholder: !form.targetDate }">
-            {{ displayDate || '请选择' }}
-          </text>
+          <view class="form-value-stack">
+            <text class="form-value" :class="{ placeholder: !form.targetDate }">
+              {{ displayDate || '请选择' }}
+            </text>
+            <text v-if="displayDateSub" class="form-value-sub">{{ displayDateSub }}</text>
+          </view>
           <view class="arrow-right" />
         </view>
       </view>
@@ -156,13 +176,13 @@
           @change="onDateChange"
         >
           <picker-view-column>
-            <view v-for="y in dateYears" :key="y" class="picker-item">{{ y }}年</view>
+            <view v-for="y in activeYears" :key="y" class="picker-item">{{ y }}年</view>
           </picker-view-column>
           <picker-view-column>
-            <view v-for="m in 12" :key="m" class="picker-item">{{ m }}月</view>
+            <view v-for="m in activeMonths" :key="m.label" class="picker-item">{{ m.label }}</view>
           </picker-view-column>
           <picker-view-column>
-            <view v-for="d in dateDays" :key="d" class="picker-item">{{ d }}日</view>
+            <view v-for="d in dateDays" :key="d" class="picker-item">{{ dayLabel(d) }}</view>
           </picker-view-column>
         </picker-view>
         <view class="date-picker-actions">
@@ -215,13 +235,23 @@ import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import { formatBusinessDate, parseBusinessDate } from '@/utils/date'
+import {
+  LUNAR_DAY_NAMES,
+  LUNAR_YEAR_MAX,
+  LUNAR_YEAR_MIN,
+  formatLunarDate,
+  lunarMonthsOfYear,
+  lunarToSolar,
+  solarToLunar
+} from '@/utils/lunar'
 import { getReminderTemplate, requestReminderSubscription, prepareReminder, confirmReminder } from '@/services/reminder'
-import type { AnniversaryType, AnniversaryRepeat } from '@/types/domain'
+import type { AnniversaryType, AnniversaryRepeat, AnniversaryCalendar } from '@/types/domain'
 import { createAnniversary, updateAnniversary, getAnniversary } from '@/services/anniversary'
 
 interface FormData {
   title: string
   targetDate: string
+  calendarType: AnniversaryCalendar
   eventType: AnniversaryType
   repeatType: AnniversaryRepeat
   reminderOffsetDays: number[]
@@ -238,7 +268,7 @@ const templateLoading = ref(true)
 const formLoaded = ref(true)
 const reminderTemplateId = ref('')
 let originalReminderKey = ''
-function reminderKey(date: string, offsets: number[], time: string) { return JSON.stringify([date, offsets, time]) }
+function reminderKey(date: string, calendarType: AnniversaryCalendar, offsets: number[], time: string) { return JSON.stringify([date, calendarType, offsets, time]) }
 const showDatePicker = ref(false)
 const showRepeatPicker = ref(false)
 const showReminderPicker = ref(false)
@@ -273,6 +303,7 @@ const pageStyle = {
 const form = reactive<FormData>({
   title: '',
   targetDate: '',
+  calendarType: 'solar',
   eventType: 'countdown',
   repeatType: 'yearly',
   reminderOffsetDays: [1],
@@ -285,6 +316,11 @@ const eventTypes = [
   { label: '倒数日', value: 'countdown' as AnniversaryType },
   { label: '纪念日', value: 'anniversary' as AnniversaryType },
   { label: '生日', value: 'birthday' as AnniversaryType }
+]
+
+const calendarOptions = [
+  { label: '公历', value: 'solar' as AnniversaryCalendar },
+  { label: '农历', value: 'lunar' as AnniversaryCalendar }
 ]
 
 const repeatOptions = [
@@ -300,7 +336,19 @@ const reminderOptions = [
   { label: '提前 7 天', value: 7 }
 ]
 
-const displayDate = computed(() => form.targetDate ? form.targetDate.replace(/-/g, '.') : '')
+const solarText = computed(() => form.targetDate.replace(/-/g, '.'))
+const lunarText = computed(() => {
+  if (!form.targetDate) return ''
+  try { return formatLunarDate(solarToLunar(form.targetDate), true) } catch { return '' }
+})
+const displayDate = computed(() => {
+  if (!form.targetDate) return ''
+  return form.calendarType === 'lunar' ? `农历 ${lunarText.value}` : solarText.value
+})
+const displayDateSub = computed(() => {
+  if (!form.targetDate) return ''
+  return form.calendarType === 'lunar' ? `公历 ${solarText.value}` : (lunarText.value ? `农历 ${lunarText.value}` : '')
+})
 
 const repeatLabel = computed(() => {
   return repeatOptions.find(r => r.value === form.repeatType)?.label || '每年'
@@ -313,21 +361,60 @@ const reminderLabel = computed(() => {
 // 日期选择器数据
 const currentYear = new Date().getFullYear()
 const dateYears = Array.from({ length: 101 }, (_, i) => currentYear - 50 + i)
+const lunarYears = Array.from({ length: LUNAR_YEAR_MAX - LUNAR_YEAR_MIN + 1 }, (_, i) => LUNAR_YEAR_MIN + i)
+const isLunarMode = computed(() => form.calendarType === 'lunar')
+const activeYears = computed(() => (isLunarMode.value ? lunarYears : dateYears))
+const activeMonths = computed(() => {
+  if (!isLunarMode.value) {
+    return Array.from({ length: 12 }, (_, i) => ({ label: `${i + 1}月`, month: i + 1, isLeap: false, days: 31 }))
+  }
+  const lunarYear = lunarYears[datePickerSelection.value[0]] || currentYear
+  return lunarMonthsOfYear(lunarYear)
+})
 const dateDays = computed(() => {
+  if (isLunarMode.value) {
+    const month = activeMonths.value[datePickerSelection.value[1]]
+    const days = month ? month.days : 30
+    return Array.from({ length: days }, (_, i) => i + 1)
+  }
   const year = dateYears[datePickerSelection.value[0]] || currentYear
   const month = (datePickerSelection.value[1] || 0) + 1
   const daysInMonth = new Date(year, month, 0).getDate()
   return Array.from({ length: daysInMonth }, (_, i) => i + 1)
 })
 
+function dayLabel(d: number): string {
+  return isLunarMode.value ? LUNAR_DAY_NAMES[d - 1] : `${d}日`
+}
+
 function openDatePicker() {
   const sourceDate = form.targetDate || formatBusinessDate(new Date())
-  const [year, month, day] = sourceDate.split('-').map(Number)
-  datePickerSelection.value = [
-    Math.max(0, dateYears.indexOf(year)),
-    Math.max(0, month - 1),
-    Math.max(0, day - 1)
-  ]
+  if (isLunarMode.value) {
+    try {
+      const lunar = solarToLunar(sourceDate)
+      const months = lunarMonthsOfYear(lunar.year)
+      const monthIndex = Math.max(0, months.findIndex(m => m.month === lunar.month && m.isLeap === lunar.isLeap))
+      datePickerSelection.value = [
+        Math.max(0, lunarYears.indexOf(lunar.year)),
+        monthIndex,
+        Math.max(0, lunar.day - 1)
+      ]
+    } catch {
+      const [year, month, day] = sourceDate.split('-').map(Number)
+      datePickerSelection.value = [
+        Math.max(0, lunarYears.indexOf(year)),
+        Math.max(0, month - 1),
+        Math.max(0, day - 1)
+      ]
+    }
+  } else {
+    const [year, month, day] = sourceDate.split('-').map(Number)
+    datePickerSelection.value = [
+      Math.max(0, dateYears.indexOf(year)),
+      Math.max(0, month - 1),
+      Math.max(0, day - 1)
+    ]
+  }
   showDatePicker.value = true
 }
 
@@ -337,10 +424,7 @@ function onSwitchChange(e: any) {
 
 function onDateChange(e: any) {
   const [yIndex, mIndex, dIndex] = e.detail.value as number[]
-  const year = dateYears[yIndex] || currentYear
-  const month = mIndex + 1
-  const maxDay = new Date(year, month, 0).getDate()
-  datePickerSelection.value = [yIndex, mIndex, Math.min(dIndex, maxDay - 1)]
+  datePickerSelection.value = [yIndex, mIndex, Math.min(dIndex, dateDays.value.length - 1)]
 }
 
 function cancelDatePicker() {
@@ -349,11 +433,28 @@ function cancelDatePicker() {
 
 function confirmDatePicker() {
   const [yIndex, mIndex, dIndex] = datePickerSelection.value
-  const year = dateYears[yIndex]
-  const month = String(mIndex + 1).padStart(2, '0')
-  const day = String(dIndex + 1).padStart(2, '0')
-  form.targetDate = `${year}-${month}-${day}`
+  if (isLunarMode.value) {
+    const months = activeMonths.value
+    const month = months[mIndex] || months[0]
+    const lunarYear = lunarYears[yIndex] || lunarYears[0]
+    try {
+      form.targetDate = lunarToSolar({ year: lunarYear, month: month.month, day: Math.min(dIndex + 1, month.days), isLeap: month.isLeap })
+    } catch {
+      uni.showToast({ title: '该日期不存在，请重新选择', icon: 'none' })
+      return
+    }
+  } else {
+    const year = dateYears[yIndex]
+    const month = String(mIndex + 1).padStart(2, '0')
+    const day = String(Math.min(dIndex + 1, dateDays.value.length)).padStart(2, '0')
+    form.targetDate = `${year}-${month}-${day}`
+  }
   showDatePicker.value = false
+}
+
+function selectCalendarType(value: AnniversaryCalendar) {
+  // 只切换解释方式，已选的公历日期保持不变。
+  form.calendarType = value
 }
 
 function selectRepeat(value: AnniversaryRepeat) {
@@ -383,13 +484,14 @@ onLoad(async (options) => {
       editRevision.value = data.revision || 1
       form.title = data.title
       form.targetDate = data.targetDate
+      form.calendarType = data.calendarType === 'lunar' ? 'lunar' : 'solar'
       form.eventType = data.eventType
       form.repeatType = data.repeatType
       form.reminderOffsetDays = data.reminderOffsetDays
       form.reminderTime = data.reminderTime || '09:00'
       form.note = data.note
       form.pinned = data.pinned
-      originalReminderKey = reminderKey(data.targetDate, data.reminderOffsetDays, form.reminderTime)
+      originalReminderKey = reminderKey(data.targetDate, form.calendarType, data.reminderOffsetDays, form.reminderTime)
       formLoaded.value = true
     } catch (error) {
       const message = error instanceof Error ? error.message : '纪念日加载失败'
@@ -422,6 +524,10 @@ async function onSave() {
   }
   try { parseBusinessDate(form.targetDate) }
   catch { uni.showToast({ title: '请选择有效的纪念日期', icon: 'none' }); return }
+  if (form.calendarType === 'lunar') {
+    try { solarToLunar(form.targetDate) }
+    catch { uni.showToast({ title: '农历日期需在 1901-2099 年范围内', icon: 'none' }); return }
+  }
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(form.reminderTime)) {
     uni.showToast({ title: '请选择有效的提醒时刻', icon: 'none' })
     return
@@ -430,12 +536,13 @@ async function onSave() {
   // 点击时冻结本次保存内容，避免授权期间表单变化造成保存与订阅错配。
   const payload = {
     title: form.title.trim(), eventType: form.eventType, targetDate: form.targetDate,
+    calendarType: form.calendarType,
     repeatType: form.repeatType, reminderOffsetDays: [...form.reminderOffsetDays],
     reminderTime: form.reminderTime,
     note: form.note.trim(), pinned: form.pinned
   }
   const shouldSubscribe = payload.reminderOffsetDays.length > 0
-    && (!isEdit.value || reminderKey(payload.targetDate, payload.reminderOffsetDays, payload.reminderTime) !== originalReminderKey)
+    && (!isEdit.value || reminderKey(payload.targetDate, payload.calendarType, payload.reminderOffsetDays, payload.reminderTime) !== originalReminderKey)
   const wasEdit = isEdit.value
   let accepted = false
   let reminderMessage = ''
@@ -460,7 +567,7 @@ async function onSave() {
       editRevision.value = created.revision
     }
     saved = true
-    originalReminderKey = reminderKey(payload.targetDate, payload.reminderOffsetDays, payload.reminderTime)
+    originalReminderKey = reminderKey(payload.targetDate, payload.calendarType, payload.reminderOffsetDays, payload.reminderTime)
     if (accepted) {
       try {
         const plan = await prepareReminder(editId.value)
@@ -642,6 +749,19 @@ async function onSave() {
 .form-value {
   font-size: 28rpx;
   color: #625249;
+}
+
+.form-value-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2rpx;
+}
+
+.form-value-sub {
+  font-size: 22rpx;
+  line-height: 1.3;
+  color: #b3a497;
 }
 
 .form-value.placeholder {

@@ -13,6 +13,7 @@ export interface LoveProfile {
 
 export type AnniversaryType = 'countdown' | 'anniversary' | 'birthday'
 export type AnniversaryRepeat = 'none' | 'yearly'
+export type AnniversaryCalendar = 'solar' | 'lunar'
 
 export interface Anniversary {
   _id: string
@@ -20,7 +21,7 @@ export interface Anniversary {
   title: string
   eventType: AnniversaryType
   targetDate: string
-  calendarType: 'solar'
+  calendarType: AnniversaryCalendar
   repeatType: AnniversaryRepeat
   reminderOffsetDays: Array<0 | 1 | 3 | 7>
   reminderTime: string
