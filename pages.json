@@ -8,6 +8,7 @@
     { "path": "pages/timeline/edit", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/timeline/detail", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/timeline/search", "style": { "navigationStyle": "custom" } },
+    { "path": "pages/life/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/profile/index", "style": { "navigationStyle": "custom", "backgroundColor": "#FBF4ED" } },
     { "path": "pages/period/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/settings/reminder", "style": { "navigationStyle": "custom" } },
@@ -41,6 +42,12 @@
         "text": "时光轴",
         "iconPath": "static/tabbar/timeline.png",
         "selectedIconPath": "static/tabbar/timeline-active.png"
+      },
+      {
+        "pagePath": "pages/life/index",
+        "text": "生活",
+        "iconPath": "static/tabbar/life.png",
+        "selectedIconPath": "static/tabbar/life-active.png"
       },
       {
         "pagePath": "pages/profile/index",

@@ -11,7 +11,7 @@
             <template v-else-if="prediction"><text class="summary-label">尚未记录本次开始</text><text class="summary-title">此前预计 {{ shortDate(prediction.start) }}</text></template>
             <template v-else><text class="summary-label">{{ history.length ? '最近开始' : '记录自己的节奏' }}</text><text class="summary-title">{{ history.length ? shortDate(history[0].startDate) : '从记录开始' }}</text></template>
           </view>
-          <image class="sprig" src="/static/reminder/ivory-flower-sprig.png" mode="aspectFit" />
+          <image class="sprig" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/reminder/ivory-flower-sprig.png" mode="aspectFit" />
         </view>
 
         <view class="glass calendar">
@@ -33,7 +33,7 @@
             <button class="text-button" @tap="openNew(true)">补记历史 <uni-icons type="right" size="15" color="#db7470" /></button>
           </template>
           <template v-else>
-            <image class="empty-art" src="/static/period/record-notebook.png" mode="aspectFit" />
+            <image class="empty-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/period/record-notebook.png" mode="aspectFit" />
             <text class="empty-title">{{ selected > today ? '这一天尚未到来' : selected === today ? '今日暂无记录' : '这一天暂无记录' }}</text>
             <text class="muted empty-copy">{{ selected > today ? '预计日期仅供参考，请按实际情况记录' : '记下经期变化，关注自己的节奏' }}</text>
             <button class="primary" :disabled="selected > today" @tap="openNew(false)">{{ selected === today ? '记录经期' : '记录这一天' }}</button>

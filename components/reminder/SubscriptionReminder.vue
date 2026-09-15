@@ -8,7 +8,7 @@
       <text class="status-badge" :class="{ active: isEnabled, attention: attentionNeeded }">{{ badgeText }}</text>
     </view>
     <view class="schedule-panel">
-      <image class="reminder-sprig" src="/static/reminder/ivory-flower-sprig.png" mode="aspectFit" aria-hidden="true" />
+      <image class="reminder-sprig" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/reminder/ivory-flower-sprig.png" mode="aspectFit" aria-hidden="true" />
       <view class="schedule-heading"><uni-icons type="calendar" size="16" color="#a68d7c" /><text>{{ scheduleTitle }}</text></view>
       <view v-if="plan?.label" class="schedule-value"><text class="schedule-date">{{ scheduleDate }}</text><text class="schedule-time">{{ scheduleTime }}</text></view>
       <text v-else class="schedule-placeholder">{{ busy ? '正在读取提醒时间…' : '暂未安排提醒' }}</text>
