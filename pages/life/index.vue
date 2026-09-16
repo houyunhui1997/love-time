@@ -1,6 +1,8 @@
 <template>
   <view class="life-page" :style="pageStyle">
-    <view class="nav-bar"><text class="nav-title">恋时光生活</text></view>
+    <view class="nav-bar">
+      <text class="nav-title">恋时光生活</text>
+    </view>
 
     <view class="life-content">
         <view class="intro">
@@ -81,7 +83,7 @@ const categories: LifeCategory[] = [
     name: '一起生活',
     description: '把心愿写进共同的日子',
     tools: [
-      { name: '心愿清单', description: '把想做的事，一起实现', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/wishlist.png' },
+      { name: '心愿清单', description: '把想做的事，一起实现', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/wishlist.png', route: '/pages/wish/index' },
       { name: '偏好备忘', description: '记住彼此的小喜好', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/preference-notes.png' },
       { name: '约会计划', description: '把期待变成日程', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/date-planner.png' },
       { name: '共同小目标', description: '和你一起，慢慢变好', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/shared-goals.png' }
@@ -159,6 +161,7 @@ function openTool(tool: LifeTool) {
 
 .nav-bar, .life-content { position: relative; z-index: 1; }
 .nav-bar {
+  position: relative;
   display: flex;
   height: calc(var(--menu-top) + var(--menu-height));
   flex: none;

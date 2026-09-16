@@ -1,0 +1,30 @@
+{
+  "bsonType": "object",
+  "description": "用户心愿清单，仅经鉴权的 wish-co 访问",
+  "required": ["records", "revision", "updatedAt"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false, "count": false },
+  "properties": {
+    "_id": { "bsonType": "string", "description": "uni-id 用户 ID" },
+    "records": {
+      "bsonType": "array",
+      "maxItems": 500,
+      "items": {
+        "bsonType": "object",
+        "required": ["id", "title", "description", "cover", "source", "templateId", "completed", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "bsonType": "string" },
+          "title": { "bsonType": "string", "minLength": 1, "maxLength": 30 },
+          "description": { "bsonType": "string", "maxLength": 100 },
+          "cover": { "bsonType": "string", "maxLength": 160 },
+          "source": { "bsonType": "string", "enum": ["template", "custom"] },
+          "templateId": { "bsonType": ["string", "null"] },
+          "completed": { "bsonType": "bool" },
+          "createdAt": { "bsonType": "long" },
+          "updatedAt": { "bsonType": "long" }
+        }
+      }
+    },
+    "revision": { "bsonType": "int" },
+    "updatedAt": { "bsonType": "long" }
+  }
+}
