@@ -156,7 +156,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import { getMomentMoodColor, getMomentMoodOption } from '@/constants/moment-moods'
 import { listMoments, type MomentListItem } from '@/services/moment'
@@ -176,6 +176,12 @@ interface TimelineItem {
 }
 
 const systemInfo = uni.getSystemInfoSync()
+
+onShareAppMessage(() => ({
+  title: '恋时光 · 记录爱，纪念每一个值得的日子',
+  path: '/pages/timeline/index',
+  imageUrl: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/official-account-cover.jpg'
+}))
 
 function getNavigationMetrics() {
   const fallbackTop = Number(systemInfo.statusBarHeight || 20) + 6

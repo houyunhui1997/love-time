@@ -130,7 +130,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
 import LoveLoading from '@/components/base/LoveLoading.vue'
 import { differenceInCalendarDays, formatBusinessDate, getNextYearlyOccurrence } from '@/utils/date'
@@ -156,6 +156,13 @@ function getNavigationMetrics() {
 }
 
 const navigationMetrics = getNavigationMetrics()
+
+onShareAppMessage(() => ({
+  title: '恋时光 · 记录爱，纪念每一个值得的日子',
+  path: '/pages/anniversary/index',
+  imageUrl: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/official-account-cover.jpg'
+}))
+
 const viewportHeight = Number(systemInfo.windowHeight || systemInfo.screenHeight || 667)
 const viewportWidth = Number(systemInfo.windowWidth || systemInfo.screenWidth || 375)
 const viewportRatio = viewportHeight / Math.max(viewportWidth, 1)
