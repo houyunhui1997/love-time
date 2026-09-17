@@ -185,9 +185,10 @@ function goBack() { uni.navigateBack({ fail: () => uni.redirectTo({ url: '/pages
 .nav-more { justify-content: flex-end; }
 .detail-scroll { position: relative; z-index: 2; min-height: 0; flex: 1; }
 .detail-content { padding: 14rpx 30rpx calc(44rpx + env(safe-area-inset-bottom)); }
-.hero-card { position: relative; height: 470rpx; overflow: hidden; border: 2rpx solid rgba(255,255,255,.92); border-radius: 32rpx; background: #f8e6df; box-shadow: 0 14rpx 34rpx rgba(103,73,54,.1); }
-.hero-cover { position: absolute; inset: 0; width: 100%; height: 100%; }
-.hero-shade { position: absolute; inset: 0; background: linear-gradient(90deg,rgba(255,250,247,.98) 0%,rgba(255,248,243,.9) 46%,rgba(255,248,243,.08) 82%); }
+.hero-card { position: relative; height: 470rpx; overflow: hidden; border: 0; border-radius: 32rpx; background: #f8e6df; box-shadow: 0 14rpx 34rpx rgba(103,73,54,.1); backface-visibility: hidden; transform: translateZ(0); -webkit-backface-visibility: hidden; }
+.hero-card::after { position: absolute; inset: 0; z-index: 4; box-sizing: border-box; border: 2rpx solid rgba(255,255,255,.92); border-radius: inherit; content: ''; pointer-events: none; }
+.hero-cover { position: absolute; inset: -2rpx; width: calc(100% + 4rpx); height: calc(100% + 4rpx); }
+.hero-shade { position: absolute; inset: -2rpx; background: linear-gradient(90deg,rgba(255,250,247,.98) 0%,rgba(255,248,243,.9) 46%,rgba(255,248,243,.08) 82%); }
 .hero-copy { position: relative; z-index: 2; display: flex; width: 64%; height: 100%; flex-direction: column; padding: 34rpx 0 30rpx 30rpx; }
 .hero-label { display: flex; width: fit-content; height: 54rpx; align-items: center; gap: 10rpx; padding: 0 22rpx; border-radius: 28rpx; background: rgba(255,232,228,.94); color: #ca6765; font-size: 23rpx; font-weight: 600; }
 .hero-title { margin-top: 28rpx; color: #49332b; font-size: 42rpx; font-weight: 700; line-height: 1.25; }
