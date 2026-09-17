@@ -1,5 +1,4 @@
 export type WishCategory = 'see' | 'travel' | 'experience' | 'memory' | 'partner'
-export type WishCategoryFilter = 'all' | WishCategory
 
 export interface WishTemplate {
   id: string
@@ -9,21 +8,20 @@ export interface WishTemplate {
   cover: string
 }
 
-export const WISH_CATEGORIES: Array<{ value: WishCategoryFilter; label: string }> = [
-  { value: 'all', label: '全部' },
-  { value: 'see', label: '一起去看看' },
-  { value: 'travel', label: '一起去旅行' },
-  { value: 'experience', label: '一起体验' },
-  { value: 'memory', label: '留下纪念' },
-  { value: 'partner', label: '想为TA做' }
-]
-
 const cover = (name: string) => `https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/wish/${name}.png`
+
+/** 全部可选封面（static/wish 下现有图片资源，不含空状态插画） */
+export const WISH_COVER_URLS: string[] = [
+  'partner-gift', 'partner-flowers', 'partner-birthday', 'partner-night', 'partner-cook', 'partner-learn',
+  'see-sea', 'see-sunrise', 'see-park', 'see-cook', 'see-photos',
+  'travel-coast', 'travel-weekend', 'travel-snow', 'travel-rail', 'travel-cabin', 'travel-city',
+  'experience-wheel', 'experience-pottery', 'experience-concert', 'experience-camping', 'experience-park', 'experience-dessert',
+  'memory-polaroid', 'memory-ticket', 'memory-journal', 'memory-voice', 'memory-object', 'memory-card'
+].map(cover)
 
 export const WISH_TEMPLATES: WishTemplate[] = [
   { id: 'see-sea', category: 'see', title: '一起去看海', description: '找个天气好的日子，和你去吹吹海风', cover: cover('see-sea') },
   { id: 'see-sunrise', category: 'see', title: '一起看日出', description: '和你一起，迎接新一天的第一缕阳光', cover: cover('see-sunrise') },
-  { id: 'see-park', category: 'see', title: '一起去游乐园', description: '像小朋友一样，开心一整天', cover: cover('see-park') },
   { id: 'see-cook', category: 'see', title: '一起做一顿饭', description: '在烟火气里，享受简单的幸福', cover: cover('see-cook') },
   { id: 'see-photos', category: 'see', title: '拍一组情侣照片', description: '把普通日子也留成故事', cover: cover('see-photos') },
 

@@ -17,22 +17,6 @@
       </view>
     </view>
 
-    <view v-if="activeView === 'library'" class="category-bar">
-      <scroll-view class="category-scroll" scroll-x :show-scrollbar="false" enhanced>
-        <view class="category-row">
-          <view
-            v-for="category in WISH_CATEGORIES"
-            :key="category.value"
-            class="category-chip"
-            :class="{ active: selectedCategory === category.value }"
-            @tap="selectedCategory = category.value"
-          >
-            {{ category.label }}
-          </view>
-        </view>
-      </scroll-view>
-    </view>
-
     <scroll-view class="wish-scroll" scroll-y :show-scrollbar="false" enhanced>
       <view v-if="activeView === 'mine'" class="mine-content">
         <view v-if="!loading && !records.length" class="empty-card">
@@ -59,7 +43,7 @@
       </view>
 
       <view v-else class="library-content">
-        <view v-for="template in visibleTemplates" :key="template.id" class="template-card">
+        <view v-for="template in WISH_TEMPLATES" :key="template.id" class="template-card">
           <image class="template-cover" :src="template.cover" mode="aspectFill" />
           <view class="template-copy">
             <text class="template-title">{{ template.title }}</text>
@@ -104,17 +88,17 @@
         <input v-model="form.title" class="wish-input" maxlength="30" placeholder="想一起完成什么？" placeholder-class="input-placeholder" />
         <textarea v-model="form.description" class="wish-textarea" maxlength="100" placeholder="写下一句期待…" placeholder-class="input-placeholder" />
         <text class="cover-label">选择封面</text>
-        <scroll-view class="cover-scroll" scroll-x :show-scrollbar="false">
+        <scroll-view class="cover-scroll" scroll-x :show-scrollbar="false" enhanced>
           <view class="cover-row">
-            <image
+            <view
               v-for="coverOption in customCovers"
               :key="coverOption"
-              class="cover-option"
+              class="cover-cell"
               :class="{ active: form.cover === coverOption }"
-              :src="coverOption"
-              mode="aspectFill"
               @tap="form.cover = coverOption"
-            />
+            >
+              <image class="cover-option" :src="coverOption" mode="aspectFill" />
+            </view>
           </view>
         </scroll-view>
         <button class="save-button" :disabled="saving || !form.title.trim()" @tap="submitEditor">
@@ -128,23 +112,15 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import LoveLoading from '@/components/base/LoveLoading.vue'
-import { WISH_CATEGORIES, WISH_TEMPLATES, type WishCategoryFilter, type WishTemplate } from '@/constants/wish-templates'
+import { WISH_COVER_URLS, WISH_TEMPLATES, type WishTemplate } from '@/constants/wish-templates'
 import { getWishJournal, saveWish, type WishItem } from '@/services/wish'
 
 const flowerSprig = 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/botanical-sprig.png'
-const defaultCover = 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/wish/partner-gift.png'
+const defaultCover = WISH_COVER_URLS[0]
 const emptyArt = 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/wish/empty.png'
-const customCovers = [
-  defaultCover,
-  'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/wish/partner-flowers.png',
-  'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/wish/see-sea.png',
-  'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/wish/travel-weekend.png',
-  'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/wish/memory-polaroid.png',
-  'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/wish/memory-card.png'
-]
+const customCovers = WISH_COVER_URLS
 
 const activeView = ref<'mine' | 'library'>('mine')
-const selectedCategory = ref<WishCategoryFilter>('all')
 const records = ref<WishItem[]>([])
 const revision = ref(0)
 const loading = ref(true)
@@ -153,7 +129,6 @@ const showEditor = ref(false)
 const editingId = ref('')
 const form = reactive({ title: '', description: '', cover: defaultCover })
 
-const visibleTemplates = computed(() => selectedCategory.value === 'all' ? WISH_TEMPLATES : WISH_TEMPLATES.filter(item => item.category === selectedCategory.value))
 const collectedIds = computed(() => new Set(records.value.map(item => item.templateId).filter(Boolean)))
 
 function makeId() {
@@ -323,31 +298,7 @@ onMounted(() => void loadData())
 
 .wish-scroll { position: relative; z-index: 2; min-height: 0; flex: 1; }
 .mine-content { padding: 22rpx 36rpx 0; }
-.library-content { padding: 0 36rpx; }
-
-/* 分类子标签固定在滚动区上方，不随列表滚动（仅灵感库视图显示） */
-.category-bar {
-  position: relative;
-  z-index: 2;
-  flex: none;
-  padding: 10rpx 36rpx 12rpx;
-  background: transparent;
-}
-.category-scroll { width: 100%; white-space: nowrap; }
-.category-row { display: inline-flex; gap: 12rpx; padding: 2rpx 2rpx 6rpx; }
-.category-chip {
-  display: flex;
-  height: 58rpx;
-  align-items: center;
-  justify-content: center;
-  padding: 0 28rpx;
-  border-radius: 30rpx;
-  background: rgba(255, 253, 249, 0.88);
-  box-shadow: 0 7rpx 18rpx rgba(97, 66, 45, 0.05);
-  color: #6f625b;
-  font-size: 23rpx;
-}
-.category-chip.active { background: #fdeceb; color: #e45f64; font-weight: 600; }
+.library-content { padding: 22rpx 36rpx 0; }
 
 .wish-card, .template-card, .empty-card {
   border: 1rpx solid rgba(255, 255, 255, 0.92);
@@ -487,8 +438,10 @@ onMounted(() => void loadData())
 .cover-label { display: block; margin-top: 22rpx; color: #66554b; font-size: 24rpx; font-weight: 600; }
 .cover-scroll { width: 100%; margin-top: 14rpx; white-space: nowrap; }
 .cover-row { display: inline-flex; gap: 14rpx; padding: 3rpx; }
-.cover-option { width: 106rpx; height: 92rpx; border: 3rpx solid transparent; border-radius: 16rpx; }
-.cover-option.active { border-color: #df7471; }
+/* 选中态包一层外框，避免 border 增减导致图片抖动 */
+.cover-cell { flex: none; padding: 5rpx; border: 3rpx solid transparent; border-radius: 20rpx; }
+.cover-cell.active { border-color: #df7471; background: rgba(223, 116, 113, 0.08); }
+.cover-option { display: block; width: 108rpx; height: 94rpx; border-radius: 15rpx; }
 .save-button {
   display: flex;
   width: 450rpx;
