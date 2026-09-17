@@ -15,14 +15,15 @@
       <text class="nav-title">{{ isEdit ? '编辑纪念日' : '添加纪念日' }}</text>
     </view>
 
-    <!-- 顶部情侣花艺 -->
-    <view class="hero-decoration">
-      <image
-        class="hero-decoration-image"
-        src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/top-couple-floral-vignette.png"
-        mode="aspectFit"
-      />
-    </view>
+    <scroll-view class="edit-scroll" scroll-y :show-scrollbar="false" enhanced>
+      <!-- 顶部情侣花艺 -->
+      <view class="hero-decoration">
+        <image
+          class="hero-decoration-image"
+          src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/top-couple-floral-vignette.png"
+          mode="aspectFit"
+        />
+      </view>
 
     <!-- 表单卡片 -->
     <view class="form-card">
@@ -163,6 +164,7 @@
       src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/anniversary/bottom-left-floral-sprig.png"
       mode="aspectFit"
     />
+    </scroll-view>
 
     <!-- 日期选择器 -->
     <view v-if="showDatePicker" class="picker-mask" @tap="cancelDatePicker">
@@ -604,21 +606,22 @@ async function onSave() {
 
 <style scoped lang="scss">
 .edit-page {
-  position: relative;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  width: auto;
-  height: auto;
-  min-height: 100vh;
-  box-sizing: border-box;
-  padding-bottom: calc(var(--love-safe-bottom) + 24rpx);
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background:
     radial-gradient(circle at 92% 38%, rgba(255, 253, 249, 0.7), transparent 40%),
     linear-gradient(180deg, #fbf3e9 0%, #fcf7ef 52%, #faf3ea 100%);
-  overflow-x: hidden;
   color: #57483e;
+}
+
+.edit-scroll {
+  position: relative;
+  z-index: 2;
+  min-height: 0;
+  flex: 1;
 }
 
 /* 顶部导航 */
@@ -628,6 +631,7 @@ async function onSave() {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   height: calc(var(--menu-top) + var(--menu-height) + 20rpx);
 }
 
@@ -839,6 +843,7 @@ async function onSave() {
   align-items: center;
   gap: 16rpx;
   margin-top: 42rpx;
+  margin-bottom: calc(var(--love-safe-bottom) + 24rpx);
 }
 
 .save-button {

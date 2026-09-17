@@ -2,7 +2,7 @@
   "pages": [
     { "path": "pages/anniversary/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/anniversary/list", "style": { "navigationStyle": "custom", "disableScroll": true } },
-    { "path": "pages/anniversary/edit", "style": { "navigationStyle": "custom", "disableScroll": false } },
+    { "path": "pages/anniversary/edit", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/anniversary/detail", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/timeline/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/timeline/edit", "style": { "navigationStyle": "custom", "disableScroll": true } },
@@ -11,6 +11,9 @@
     { "path": "pages/life/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/wish/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/preference/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
+    { "path": "pages/plan/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
+    { "path": "pages/plan/detail", "style": { "navigationStyle": "custom", "disableScroll": true } },
+    { "path": "pages/plan/edit", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/profile/index", "style": { "navigationStyle": "custom", "backgroundColor": "#FBF4ED" } },
     { "path": "pages/period/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/settings/reminder", "style": { "navigationStyle": "custom" } },
