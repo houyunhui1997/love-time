@@ -1,0 +1,28 @@
+{
+  "bsonType": "object",
+  "description": "用户偏好备忘，仅经鉴权的 preference-co 访问",
+  "required": ["records", "revision", "updatedAt"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false, "count": false },
+  "properties": {
+    "_id": { "bsonType": "string", "description": "uni-id 用户 ID" },
+    "records": {
+      "bsonType": "array",
+      "maxItems": 500,
+      "items": {
+        "bsonType": "object",
+        "required": ["id", "title", "category", "tag", "note", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "bsonType": "string" },
+          "title": { "bsonType": "string", "minLength": 1, "maxLength": 30 },
+          "category": { "bsonType": "string", "enum": ["like", "dislike", "habit", "remember"] },
+          "tag": { "bsonType": "string", "maxLength": 16 },
+          "note": { "bsonType": "string", "maxLength": 100 },
+          "createdAt": { "bsonType": "long" },
+          "updatedAt": { "bsonType": "long" }
+        }
+      }
+    },
+    "revision": { "bsonType": "int" },
+    "updatedAt": { "bsonType": "long" }
+  }
+}

@@ -10,6 +10,7 @@
     { "path": "pages/timeline/search", "style": { "navigationStyle": "custom" } },
     { "path": "pages/life/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/wish/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
+    { "path": "pages/preference/index", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/profile/index", "style": { "navigationStyle": "custom", "backgroundColor": "#FBF4ED" } },
     { "path": "pages/period/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/settings/reminder", "style": { "navigationStyle": "custom" } },
