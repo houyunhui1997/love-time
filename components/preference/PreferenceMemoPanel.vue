@@ -25,14 +25,14 @@
     <scroll-view class="memo-scroll" scroll-y :show-scrollbar="false" enhanced>
       <view class="memo-content">
         <view v-if="!loading && !records.length" class="empty-card">
-          <image class="empty-art" src="/static/preference/empty.png" mode="aspectFit" />
+          <image class="empty-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/preference/empty.png" mode="aspectFit" />
           <text class="empty-title">还没有偏好备忘</text>
           <text class="empty-copy">把 TA 喜欢的、在意的，慢慢记在这里</text>
           <button class="empty-action" @tap="openCreate">记下第一件小事</button>
         </view>
 
         <view v-else-if="!loading && !visibleRecords.length" class="empty-filter">
-          <image class="empty-filter-art" src="/static/preference/empty.png" mode="aspectFit" />
+          <image class="empty-filter-art" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/preference/empty.png" mode="aspectFit" />
           <text>这个分类还没有记录</text>
         </view>
 

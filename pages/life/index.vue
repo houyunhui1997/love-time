@@ -85,7 +85,7 @@ const categories: LifeCategory[] = [
     tools: [
       { name: '心愿清单', description: '把想做的事，一起实现', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/wishlist.png', route: '/pages/wish/index' },
       { name: '偏好备忘', description: '记住彼此的小喜好', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/preference-notes.png', route: '/pages/preference/index' },
-      { name: '约会计划', description: '把期待变成日程', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/date-planner.png' },
+      { name: '约会计划', description: '把期待变成日程', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/date-planner.png', route: '/pages/plan/index' },
       { name: '共同小目标', description: '和你一起，慢慢变好', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/shared-goals.png' }
     ]
   },
