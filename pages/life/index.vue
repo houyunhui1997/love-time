@@ -6,10 +6,11 @@
 
     <view class="life-content">
         <view class="intro">
-          <text class="intro-copy">{{ currentCategory.description }}</text>
+          <text class="intro-copy">照顾好自己，也温柔陪伴彼此</text>
           <image class="intro-flower" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/botanical-sprig.png" mode="aspectFit" />
         </view>
 
+        <!-- 分类 tab 栏暂时隐藏，需要时恢复即可
         <view class="category-tabs">
           <view
             v-for="category in categories"
@@ -21,10 +22,11 @@
             <text>{{ category.name }}</text>
           </view>
         </view>
+        -->
 
         <view class="tool-grid">
           <view
-            v-for="tool in currentCategory.tools"
+            v-for="tool in visibleTools"
             :key="tool.name"
             class="tool-card"
             @tap="openTool(tool)"
@@ -67,15 +69,16 @@ interface LifeCategory {
 }
 
 // 增减工具只需调整对应分类的数组，页面布局会自动适配。
+// 注意：分类 tab 暂时隐藏，页面平铺展示各分类保留下来的工具；被注释的条目需要时取消注释即可恢复。
 const categories: LifeCategory[] = [
   {
     key: 'care',
     name: '日常关怀',
     description: '照顾好自己，也温柔陪伴彼此',
     tools: [
-      { name: '经期管理', description: '记录身体变化', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/period-tracker.png', route: '/pages/period/index' },
-      { name: '心情日历', description: '收藏今天的心情', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/mood-calendar.png' },
-      { name: '习惯打卡', description: '一起养成好习惯', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/habit-checkin.png' }
+      { name: '经期管理', description: '记录身体变化', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/period-tracker.png', route: '/pages/period/index' }
+      // { name: '心情日历', description: '收藏今天的心情', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/mood-calendar.png' },
+      // { name: '习惯打卡', description: '一起养成好习惯', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/habit-checkin.png' }
     ]
   },
   {
@@ -85,8 +88,8 @@ const categories: LifeCategory[] = [
     tools: [
       { name: '心愿清单', description: '把想做的事，一起实现', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/wishlist.png', route: '/pages/wish/index' },
       { name: '偏好备忘', description: '记住彼此的小喜好', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/preference-notes.png', route: '/pages/preference/index' },
-      { name: '约会计划', description: '把期待变成日程', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/date-planner.png', route: '/pages/plan/index' },
-      { name: '共同小目标', description: '和你一起，慢慢变好', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/shared-goals.png' }
+      { name: '约会计划', description: '把期待变成日程', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/date-planner.png', route: '/pages/plan/index' }
+      // { name: '共同小目标', description: '和你一起，慢慢变好', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/shared-goals.png' }
     ]
   },
   {
@@ -94,13 +97,15 @@ const categories: LifeCategory[] = [
     name: '轻松互动',
     description: '给平凡日常添一点新鲜感',
     tools: [
-      { name: '今天吃什么', description: '一起挑喜欢的晚餐', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/dinner-picker.png' },
-      { name: '约会灵感', description: '发现下一次心动', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/date-ideas.png' },
-      { name: '每日一问', description: '每天更了解彼此', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/daily-question.png' }
+      { name: '今天吃什么', description: '一起挑喜欢的晚餐', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/dinner-picker.png' }
+      // { name: '约会灵感', description: '发现下一次心动', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/date-ideas.png' },
+      // { name: '每日一问', description: '每天更了解彼此', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/daily-question.png' }
     ]
   }
 ]
 
+// 分类 tab 隐藏期间，把各分类保留的工具平铺到同一页。
+const visibleTools = computed(() => categories.flatMap((category) => category.tools))
 const activeCategory = ref('together')
 const currentCategory = computed(() => categories.find((category) => category.key === activeCategory.value) || categories[1])
 
