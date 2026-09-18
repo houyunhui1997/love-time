@@ -84,7 +84,6 @@
                   <uni-icons type="heart-filled" size="14" :color="moodColor(item.mood)" />
                   <text>{{ moodLabel(item.mood) }}</text>
                 </view>
-                <text class="meta-time">{{ item.time }}</text>
               </view>
             </view>
           </view>
@@ -111,10 +110,8 @@
     />
 
     <view v-if="!sessionError" class="record-action" @tap="goToEdit">
-      <view class="record-button">
-        <uni-icons type="compose" size="31" color="#ffffff" />
-      </view>
-      <text class="record-label">记录此刻</text>
+      <uni-icons type="plus" size="24" color="#ffffff" />
+      <text class="record-label">新增</text>
     </view>
 
     <view v-if="showMonthPicker" class="picker-mask" @tap="cancelMonthPicker">
@@ -170,7 +167,6 @@ interface TimelineItem {
   monthName: string
   content: string
   mood: MomentMood
-  time: string
   images: string[]
   isToday: boolean
 }
@@ -241,11 +237,6 @@ function isToday(occurredAt: number) {
     && date.getDate() === today.getDate()
 }
 
-function formatTime(occurredAt: number) {
-  const date = new Date(occurredAt)
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
-
 function mapItem(item: MomentListItem): TimelineItem {
   const date = new Date(item.occurredAt)
   return {
@@ -254,7 +245,6 @@ function mapItem(item: MomentListItem): TimelineItem {
     monthName: monthNames[date.getMonth()],
     content: item.content,
     mood: item.mood,
-    time: formatTime(item.occurredAt),
     images: [],
     isToday: isToday(item.occurredAt)
   }
@@ -587,7 +577,8 @@ async function retrySession() {
 .moment-card {
   align-self: start;
   min-height: 170rpx;
-  margin-bottom: 36rpx;
+  margin-top: 22rpx;
+  margin-bottom: 14rpx;
   padding: 24rpx 25rpx 19rpx;
   box-sizing: border-box;
   overflow: hidden;
@@ -692,11 +683,6 @@ async function retrySession() {
   font-size: 21rpx;
 }
 
-.meta-time {
-  color: #a79082;
-  font-size: 21rpx;
-}
-
 .empty-state {
   position: relative;
   z-index: 2;
@@ -768,34 +754,34 @@ async function retrySession() {
 
 .record-action {
   position: absolute;
-  right: 43rpx;
-  bottom: 29rpx;
+  right: 30rpx;
+  bottom: 32rpx;
   z-index: 5;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12rpx;
-}
-
-.record-button {
-  display: flex;
-  width: 92rpx;
-  height: 92rpx;
+  box-sizing: border-box;
+  width: 150rpx;
+  height: 78rpx;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #ec8580, #d96768);
-  box-shadow: 0 12rpx 30rpx rgba(205, 91, 91, 0.31);
+  gap: 10rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+  border-radius: 40rpx;
+  background: linear-gradient(135deg, #f3918a 0%, #e6686b 100%);
+  box-shadow: 0 16rpx 34rpx rgba(205, 90, 88, 0.28), inset 0 2rpx 6rpx rgba(255, 255, 255, 0.32);
+  color: #fff;
+  backdrop-filter: blur(12rpx);
+  -webkit-backdrop-filter: blur(12rpx);
 }
 
-.record-action:active .record-button {
-  transform: scale(0.94);
+.record-action:active {
+  transform: scale(0.96);
 }
 
 .record-label {
-  color: #655248;
-  font-size: 23rpx;
-  font-weight: 500;
+  color: #fff;
+  font-size: 25rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
 }
 
 .picker-mask {

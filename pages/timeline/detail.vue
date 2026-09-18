@@ -10,65 +10,64 @@
     <scroll-view class="detail-scroll" scroll-y :show-scrollbar="false" enhanced>
       <view v-if="moment" class="detail-content">
         <view class="moment-header">
-          <view class="date-marker">
-            <uni-icons type="smallcircle-filled" size="14" color="#e47a75" />
-            <view class="marker-line" />
-          </view>
           <view class="header-copy">
-            <text class="occurred-at">{{ occurredAtLabel }}</text>
+            <text class="occurred-date">{{ occurredDateLabel }}</text>
             <view class="mood-summary">
               <uni-icons :type="moodOption.icon" size="23" :color="moodColor" />
               <text>{{ moodOption.label }}</text>
             </view>
           </view>
-          <image class="header-floral" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/timeline/timeline-bottom-bouquet.png" mode="aspectFit" />
+          <image class="header-quote" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/timeline/moment-quote.png" mode="aspectFit" />
+          <image class="header-floral" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/timeline/blossom-sprig.png" mode="aspectFit" />
         </view>
 
-        <view class="content-card glass-card">
-          <image class="paper-tape" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/timeline/moment-paper-tape.png" mode="aspectFit" />
-          <text class="moment-content">{{ moment.content }}</text>
-        </view>
+        <view class="memory-card">
+          <view class="memory-card-inner">
+            <text class="moment-content">{{ moment.content }}</text>
 
-        <view v-if="moment.images.length" class="photos-card glass-card">
-          <view class="photo-grid">
-            <view
-              v-for="(imageUrl, index) in visibleImages"
-              :key="imageUrl + '-' + index"
-              class="photo-cell"
-              @tap="previewImage(index)"
-            >
-              <image class="detail-image" :src="imageUrl" mode="aspectFill" />
-              <view v-if="index === 2 && hiddenImageCount > 0" class="photo-count">
-                <text>+{{ hiddenImageCount }}</text>
+            <view v-if="moment.images.length" class="photos-section">
+              <view class="photo-grid">
+                <view
+                  v-for="(imageUrl, index) in moment.images"
+                  :key="imageUrl + '-' + index"
+                  class="photo-cell"
+                  @tap="previewImage(index)"
+                >
+                  <image class="detail-image" :src="imageUrl" mode="aspectFill" />
+                </view>
+              </view>
+            </view>
+
+            <view class="meta-row">
+              <view class="meta-item">
+                <uni-icons type="calendar" size="23" color="#9c8477" />
+                <text class="meta-label">记录于</text>
+                <text class="meta-value">{{ occurredAtCompact }}</text>
+              </view>
+              <view class="meta-divider">·</view>
+              <view class="meta-item">
+                <uni-icons :type="moodOption.icon" size="23" :color="moodColor" />
+                <text class="meta-label">心情</text>
+                <text class="meta-value mood-value">{{ moodOption.label }}</text>
               </view>
             </view>
           </view>
         </view>
 
-        <view class="meta-card glass-card">
-          <view class="meta-item">
-            <view class="meta-label">
-              <uni-icons type="calendar" size="21" color="#9c8477" />
-              <text>发生时间</text>
-            </view>
-            <text class="meta-value">{{ occurredAtCompact }}</text>
-          </view>
-          <view class="meta-item">
-            <view class="meta-label">
-              <uni-icons :type="moodOption.icon" size="21" :color="moodColor" />
-              <text>这一刻的心情</text>
-            </view>
-            <text class="meta-value mood-value">{{ moodOption.label }}</text>
-          </view>
-        </view>
-
-        <button class="edit-button" @tap="goToEdit">编辑这段时光</button>
-        <text class="delete-action" @tap="onDelete">删除</text>
         <view class="safe-space" />
       </view>
     </scroll-view>
 
-    <image class="bottom-floral" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/timeline/timeline-bottom-bouquet.png" mode="aspectFit" />
+    <view v-if="moment" class="floating-actions">
+      <view class="floating-action edit" @tap="goToEdit">
+        <uni-icons type="compose" size="24" color="#ffffff" />
+        <text class="floating-action-label">编辑</text>
+      </view>
+      <view class="floating-action delete" @tap="onDelete">
+        <uni-icons type="trash" size="21" color="#d56d6b" />
+        <text class="floating-action-label">删除</text>
+      </view>
+    </view>
     <LoveLoading :visible="loading" fullscreen text="正在加载时光" />
   </view>
 </template>
@@ -116,27 +115,21 @@ const loadedOnce = ref(false)
 
 const moodOption = computed(() => getMomentMoodOption(moment.value?.mood || 'warm'))
 const moodColor = computed(() => getMomentMoodColor(moment.value?.mood || 'warm'))
-const visibleImages = computed(() => moment.value?.images.slice(0, 3) || [])
-const hiddenImageCount = computed(() => Math.max(0, (moment.value?.images.length || 0) - 3))
 
 function pad(value: number) {
   return String(value).padStart(2, '0')
 }
 
-function formatTime(date: Date) {
-  return pad(date.getHours()) + ':' + pad(date.getMinutes())
-}
-
-const occurredAtLabel = computed(() => {
+const occurredDateLabel = computed(() => {
   if (!moment.value) return ''
   const date = new Date(moment.value.occurredAt)
-  return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日 ' + formatTime(date)
+  return date.getFullYear() + '年' + (date.getMonth() + 1) + '月' + date.getDate() + '日'
 })
 
 const occurredAtCompact = computed(() => {
   if (!moment.value) return ''
   const date = new Date(moment.value.occurredAt)
-  return date.getFullYear() + '.' + pad(date.getMonth() + 1) + '.' + pad(date.getDate()) + ' ' + formatTime(date)
+  return date.getFullYear() + '.' + pad(date.getMonth() + 1) + '.' + pad(date.getDate())
 })
 
 async function loadMoment() {
@@ -273,31 +266,15 @@ function onDelete() {
 .detail-content {
   position: relative;
   z-index: 2;
-  padding: 30rpx 34rpx 0;
+  padding: 25rpx 18rpx 0;
 }
 
 .moment-header {
   position: relative;
   display: flex;
-  min-height: 178rpx;
+  min-height: 250rpx;
   align-items: flex-start;
-  padding: 36rpx 0 16rpx 10rpx;
-  overflow: hidden;
-}
-
-.date-marker {
-  display: flex;
-  width: 30rpx;
-  align-items: center;
-  flex-direction: column;
-  padding-top: 8rpx;
-}
-
-.marker-line {
-  width: 1rpx;
-  height: 73rpx;
-  margin-top: 4rpx;
-  background: rgba(224, 113, 109, 0.72);
+  padding: 28rpx 21rpx 16rpx;
 }
 
 .header-copy {
@@ -307,178 +284,201 @@ function onDelete() {
   flex-direction: column;
 }
 
-.occurred-at {
+.occurred-date {
   color: #5a3d32;
   font-family: Georgia, 'Songti SC', STSong, serif;
-  font-size: 38rpx;
-  line-height: 1.35;
+  font-size: 48rpx;
+  line-height: 1.25;
+  letter-spacing: 1rpx;
 }
 
 .mood-summary {
   display: flex;
+  width: fit-content;
+  height: 50rpx;
   align-items: center;
-  gap: 14rpx;
-  margin-top: 21rpx;
-  color: #7f6659;
-  font-size: 28rpx;
+  gap: 9rpx;
+  margin-top: 18rpx;
+  padding: 0 22rpx;
+  border-radius: 25rpx;
+  background: rgba(239, 176, 174, 0.24);
+  color: #7b554c;
+  font-size: 25rpx;
+}
+
+.header-quote {
+  position: absolute;
+  top: 43rpx;
+  right: 74rpx;
+  z-index: 2;
+  width: 320rpx;
+  height: 220rpx;
+  opacity: 0.88;
 }
 
 .header-floral {
   position: absolute;
-  top: -34rpx;
-  right: -36rpx;
-  width: 235rpx;
-  height: 210rpx;
-  opacity: 0.5;
-  transform: rotate(-13deg) scaleX(-1);
-  transform-origin: center;
+  top: -4rpx;
+  right: -45rpx;
+  width: 222rpx;
+  height: 242rpx;
+  opacity: 0.67;
 }
 
-.glass-card {
-  border: 1rpx solid rgba(255, 255, 255, 0.95);
-  background: rgba(252, 247, 241, 0.86);
-  box-shadow: inset 0 2rpx 0 rgba(255, 255, 255, 0.9), 0 13rpx 31rpx rgba(105, 72, 54, 0.075);
-  backdrop-filter: blur(16rpx);
-  -webkit-backdrop-filter: blur(16rpx);
-}
-
-.content-card {
+.memory-card {
   position: relative;
-  min-height: 280rpx;
-  padding: 77rpx 46rpx 48rpx;
-  border-radius: 29rpx;
+  padding: 11rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.92);
+  border-radius: 34rpx;
+  background: rgba(255, 252, 247, 0.78);
+  box-shadow: 0 16rpx 40rpx rgba(113, 76, 56, 0.09);
 }
 
-.paper-tape {
+.memory-card::before {
   position: absolute;
-  top: -28rpx;
-  left: 20rpx;
-  width: 135rpx;
-  height: 62rpx;
-  opacity: 0.72;
-  transform: rotate(-5deg);
+  inset: 11rpx;
+  border: 4rpx dotted rgba(232, 137, 135, 0.55);
+  border-radius: 25rpx;
+  content: '';
+  pointer-events: none;
+}
+
+.memory-card-inner {
+  position: relative;
+  z-index: 1;
+  padding: 62rpx 39rpx 34rpx;
+  border-radius: 24rpx;
+  background:
+    radial-gradient(circle, rgba(220, 144, 127, 0.12) 1.5rpx, transparent 1.8rpx) 0 0 / 22rpx 22rpx,
+    rgba(255, 252, 247, 0.72);
 }
 
 .moment-content {
   display: block;
   color: #5d4035;
   font-family: 'Songti SC', STSong, serif;
-  font-size: 31rpx;
-  line-height: 1.9;
+  font-size: 29rpx;
+  line-height: 1.82;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.photos-card {
-  margin-top: 27rpx;
-  padding: 20rpx;
-  border-radius: 29rpx;
+.photos-section {
+  margin-top: 42rpx;
 }
 
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 11rpx;
+  gap: 12rpx;
 }
 
 .photo-cell {
   position: relative;
-  height: 235rpx;
+  height: 184rpx;
   overflow: hidden;
-  border-radius: 22rpx;
+  border: 8rpx solid rgba(255, 255, 255, 0.96);
+  border-radius: 18rpx;
+  background: #f1e6de;
+  box-shadow: 0 8rpx 18rpx rgba(101, 70, 54, 0.13);
 }
 
 .detail-image {
+  display: block;
   width: 100%;
   height: 100%;
 }
 
-.photo-count {
-  position: absolute;
-  inset: 0;
+.meta-row {
   display: flex;
+  min-height: 104rpx;
   align-items: center;
   justify-content: center;
-  background: rgba(60, 44, 36, 0.38);
-  color: #fff;
-  font-size: 35rpx;
-}
-
-.meta-card {
-  margin-top: 27rpx;
-  padding: 0 29rpx;
-  border-radius: 29rpx;
+  gap: 18rpx;
+  margin-top: 42rpx;
+  border-top: 1rpx dashed rgba(163, 129, 110, 0.42);
+  color: #806a5e;
 }
 
 .meta-item {
   display: flex;
-  min-height: 93rpx;
   align-items: center;
-  justify-content: space-between;
-}
-
-.meta-item + .meta-item {
-  border-top: 1rpx solid rgba(218, 197, 184, 0.48);
+  gap: 10rpx;
+  white-space: nowrap;
 }
 
 .meta-label {
-  display: flex;
-  align-items: center;
-  gap: 19rpx;
   color: #8b7467;
-  font-size: 26rpx;
+  font-size: 25rpx;
 }
 
 .meta-value {
   color: #5e463a;
+  font-family: Georgia, 'Songti SC', STSong, serif;
   font-size: 25rpx;
 }
 
 .mood-value {
   color: #cf6b68;
+  font-family: inherit;
+  font-weight: 600;
 }
 
-.edit-button {
+.meta-divider {
+  color: #b6a298;
+  font-size: 27rpx;
+}
+
+.floating-actions {
+  position: fixed;
+  right: 30rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 32rpx);
+  z-index: 20;
   display: flex;
-  width: 616rpx;
-  height: 91rpx;
+  flex-direction: row;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.floating-action {
+  display: flex;
+  box-sizing: border-box;
+  width: 150rpx;
+  height: 78rpx;
   align-items: center;
   justify-content: center;
-  margin: 37rpx auto 0;
+  gap: 10rpx;
   padding: 0;
-  border-radius: 48rpx;
-  background: linear-gradient(135deg, #eb817a 0%, #db676a 100%);
-  box-shadow: 0 13rpx 29rpx rgba(205, 94, 90, 0.22);
+  border: 2rpx solid rgba(255, 255, 255, 0.9);
+  border-radius: 40rpx;
+  box-shadow: 0 13rpx 28rpx rgba(105, 71, 55, 0.14), inset 0 2rpx 5rpx rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(12rpx);
+  -webkit-backdrop-filter: blur(12rpx);
+}
+
+.floating-action:active {
+  transform: scale(0.96);
+}
+
+.floating-action.delete {
+  border-color: rgba(241, 205, 201, 0.82);
+  background: rgba(255, 250, 247, 0.94);
+  color: #c96766;
+}
+
+.floating-action.edit {
+  background: linear-gradient(135deg, #f3918a 0%, #e6686b 100%);
+  box-shadow: 0 16rpx 34rpx rgba(205, 90, 88, 0.28), inset 0 2rpx 6rpx rgba(255, 255, 255, 0.32);
   color: #fff;
-  font-size: 30rpx;
-  font-weight: 500;
-  line-height: 91rpx;
 }
 
-.edit-button::after {
-  border: 0;
-}
-
-.delete-action {
-  display: block;
-  margin-top: 27rpx;
-  color: #d96866;
-  font-size: 27rpx;
-  text-align: center;
-}
-
-.bottom-floral {
-  position: absolute;
-  bottom: -72rpx;
-  left: -56rpx;
-  z-index: 1;
-  width: 285rpx;
-  height: 245rpx;
-  opacity: 0.42;
-  pointer-events: none;
+.floating-action-label {
+  font-size: 25rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
 }
 
 .safe-space {
-  height: calc(env(safe-area-inset-bottom) + 72rpx);
+  height: calc(env(safe-area-inset-bottom) + 130rpx);
 }
 </style>

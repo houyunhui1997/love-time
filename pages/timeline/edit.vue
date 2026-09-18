@@ -40,13 +40,13 @@
         </view>
 
         <view class="settings-card">
-          <view class="setting-row time-row" @tap="openDateTimePicker">
+          <view class="setting-row time-row" @tap="openDatePicker">
             <view class="setting-label">
               <uni-icons class="setting-icon" type="calendar" size="20" color="#df7772" />
-              <text>发生时间</text>
+              <text>发生日期</text>
             </view>
             <view class="setting-value">
-              <text>{{ displayDateTime }}</text>
+              <text>{{ displayDate }}</text>
               <uni-icons type="right" size="19" color="#a9998e" />
             </view>
           </view>
@@ -101,15 +101,15 @@
       mode="aspectFit"
     />
 
-    <view v-if="showDateTimePicker" class="picker-mask" @tap="cancelDateTimePicker">
+    <view v-if="showDatePicker" class="picker-mask" @tap="cancelDatePicker">
       <view class="picker-sheet date-picker-sheet" @tap.stop>
         <view class="picker-handle" />
-        <text class="picker-title">选择发生时间</text>
+        <text class="picker-title">选择发生日期</text>
         <picker-view
-          class="datetime-picker"
+          class="date-picker"
           indicator-style="height: 88rpx;"
-          :value="dateTimeSelection"
-          @change="onDateTimeChange"
+          :value="dateSelection"
+          @change="onDateChange"
         >
           <picker-view-column>
             <view v-for="year in dateYears" :key="year" class="picker-item">{{ year }}年</view>
@@ -120,16 +120,10 @@
           <picker-view-column>
             <view v-for="day in dateDays" :key="day" class="picker-item">{{ day }}日</view>
           </picker-view-column>
-          <picker-view-column>
-            <view v-for="hour in 24" :key="hour" class="picker-item">{{ hour - 1 }}时</view>
-          </picker-view-column>
-          <picker-view-column>
-            <view v-for="minute in 60" :key="minute" class="picker-item">{{ minute - 1 }}分</view>
-          </picker-view-column>
         </picker-view>
         <view class="picker-actions">
-          <button class="picker-action picker-cancel" @tap="cancelDateTimePicker">取消</button>
-          <button class="picker-action picker-confirm" @tap="confirmDateTime">确定</button>
+          <button class="picker-action picker-cancel" @tap="cancelDatePicker">取消</button>
+          <button class="picker-action picker-confirm" @tap="confirmDate">确定</button>
         </view>
       </view>
     </view>
@@ -157,7 +151,6 @@ interface FormData {
   content: string
   images: string[]
   occurredAt: string
-  occurredTime: string
   mood: MomentMood
 }
 
@@ -184,16 +177,16 @@ const isEdit = ref(false)
 const editId = ref('')
 const editRevision = ref(1)
 const saving = ref(false)
-const showDateTimePicker = ref(false)
+const showDatePicker = ref(false)
 const showMoodPicker = ref(false)
-const dateTimeSelection = ref<number[]>([10, 0, 0, 0, 0])
+const dateSelection = ref<number[]>([10, 0, 0])
+const preservedEditTime = ref({ hour: 0, minute: 0 })
 
 const form = reactive<FormData>({
   title: '',
   content: '',
   images: [],
   occurredAt: '',
-  occurredTime: '',
   mood: 'warm'
 })
 
@@ -205,52 +198,49 @@ const quickMoods = quickMoodValues.map(value => allMoodOptions.find(option => op
 const canSave = computed(() => form.content.trim().length > 0)
 const isExtendedMood = computed(() => !quickMoodValues.includes(form.mood))
 
-const displayDateTime = computed(() => {
+const displayDate = computed(() => {
   if (!form.occurredAt) return ''
-  return `${form.occurredAt.replace(/-/g, '.')} ${form.occurredTime || '00:00'}`
+  return form.occurredAt.replace(/-/g, '.')
 })
 
 const currentYear = new Date().getFullYear()
 const dateYears = Array.from({ length: 21 }, (_, index) => currentYear - 10 + index)
 const dateDays = computed(() => {
-  const [yearIndex, monthIndex] = dateTimeSelection.value
+  const [yearIndex, monthIndex] = dateSelection.value
   const year = dateYears[yearIndex] || currentYear
   const count = new Date(year, monthIndex + 1, 0).getDate()
   return Array.from({ length: count }, (_, index) => index + 1)
 })
 
-function getCurrentDateTimeSelection() {
+function getCurrentDateSelection() {
   const current = new Date()
   const year = form.occurredAt ? Number(form.occurredAt.split('-')[0]) : current.getFullYear()
   const month = form.occurredAt ? Number(form.occurredAt.split('-')[1]) : current.getMonth() + 1
   const day = form.occurredAt ? Number(form.occurredAt.split('-')[2]) : current.getDate()
-  const hour = form.occurredTime ? Number(form.occurredTime.split(':')[0]) : current.getHours()
-  const minute = form.occurredTime ? Number(form.occurredTime.split(':')[1]) : current.getMinutes()
-  return [dateYears.indexOf(year), month - 1, day - 1, hour, minute]
+  return [dateYears.indexOf(year), month - 1, day - 1]
 }
 
-function openDateTimePicker() {
-  dateTimeSelection.value = getCurrentDateTimeSelection()
-  showDateTimePicker.value = true
+function openDatePicker() {
+  dateSelection.value = getCurrentDateSelection()
+  showDatePicker.value = true
 }
 
-function onDateTimeChange(event: { detail: { value: number[] } }) {
-  const [yearIndex, monthIndex, dayIndex, hourIndex, minuteIndex] = event.detail.value
+function onDateChange(event: { detail: { value: number[] } }) {
+  const [yearIndex, monthIndex, dayIndex] = event.detail.value
   const year = dateYears[yearIndex] || currentYear
   const maxDayIndex = new Date(year, monthIndex + 1, 0).getDate() - 1
-  dateTimeSelection.value = [yearIndex, monthIndex, Math.min(dayIndex, maxDayIndex), hourIndex, minuteIndex]
+  dateSelection.value = [yearIndex, monthIndex, Math.min(dayIndex, maxDayIndex)]
 }
 
-function cancelDateTimePicker() {
-  showDateTimePicker.value = false
+function cancelDatePicker() {
+  showDatePicker.value = false
 }
 
-function confirmDateTime() {
-  const [yearIndex, monthIndex, dayIndex, hourIndex, minuteIndex] = dateTimeSelection.value
+function confirmDate() {
+  const [yearIndex, monthIndex, dayIndex] = dateSelection.value
   const year = dateYears[yearIndex] || currentYear
   form.occurredAt = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(dayIndex + 1).padStart(2, '0')}`
-  form.occurredTime = `${String(hourIndex).padStart(2, '0')}:${String(minuteIndex).padStart(2, '0')}`
-  showDateTimePicker.value = false
+  showDatePicker.value = false
 }
 
 function selectExtendedMood(mood: MomentMood) {
@@ -291,7 +281,6 @@ async function uploadImage(localPath: string) {
 onLoad(async (options) => {
   const current = new Date()
   form.occurredAt = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`
-  form.occurredTime = `${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`
 
   if (!options?.id) return
   isEdit.value = true
@@ -305,7 +294,7 @@ onLoad(async (options) => {
 
     const occurred = new Date(data.occurredAt)
     form.occurredAt = `${occurred.getFullYear()}-${String(occurred.getMonth() + 1).padStart(2, '0')}-${String(occurred.getDate()).padStart(2, '0')}`
-    form.occurredTime = `${String(occurred.getHours()).padStart(2, '0')}:${String(occurred.getMinutes()).padStart(2, '0')}`
+    preservedEditTime.value = { hour: occurred.getHours(), minute: occurred.getMinutes() }
 
     if (data.mediaIds.length) {
       const urlMap = await getTempFileUrls(data.mediaIds)
@@ -325,8 +314,8 @@ function goBack() {
     showMoodPicker.value = false
     return
   }
-  if (showDateTimePicker.value) {
-    cancelDateTimePicker()
+  if (showDatePicker.value) {
+    cancelDatePicker()
     return
   }
   uni.navigateBack()
@@ -337,7 +326,7 @@ async function onSave() {
   saving.value = true
   try {
     const [year, month, day] = form.occurredAt.split('-').map(Number)
-    const [hour, minute] = (form.occurredTime || '00:00').split(':').map(Number)
+    const { hour, minute } = isEdit.value ? preservedEditTime.value : { hour: 0, minute: 0 }
     const occurredAt = new Date(year, month - 1, day, hour, minute).getTime()
     const mediaIds: string[] = []
 
@@ -706,7 +695,7 @@ async function onSave() {
   text-align: center;
 }
 
-.datetime-picker {
+.date-picker {
   width: 100%;
   height: 390rpx;
   margin-top: 12rpx;
