@@ -6,7 +6,7 @@
         <text class="nav-title">{{ editingId ? '编辑约会计划' : '新增约会计划' }}</text>
         <text class="nav-subtitle">把一场期待的见面，轻轻安排好</text>
       </view>
-      <view class="nav-save" @tap="submit">保存</view>
+      <!-- <view class="nav-save" @tap="submit">保存</view> -->
     </view>
 
     <scroll-view class="edit-scroll" scroll-y :show-scrollbar="false" enhanced>
