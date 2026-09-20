@@ -15,6 +15,8 @@
     { "path": "pages/plan/detail", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/plan/edit", "style": { "navigationStyle": "custom", "disableScroll": true } },
     { "path": "pages/profile/index", "style": { "navigationStyle": "custom", "backgroundColor": "#FBF4ED" } },
+    { "path": "pages/couple/index", "style": { "navigationStyle": "custom", "backgroundColor": "#FBF4ED" } },
+    { "path": "pages/couple/join", "style": { "navigationStyle": "custom", "backgroundColor": "#FBF4ED" } },
     { "path": "pages/period/index", "style": { "navigationStyle": "custom" } },
     { "path": "pages/settings/reminder", "style": { "navigationStyle": "custom" } },
     { "path": "pages/settings/theme", "style": { "navigationStyle": "custom" } },

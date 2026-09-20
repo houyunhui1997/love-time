@@ -1,7 +1,7 @@
 'use strict'
 
 const uniIdCommon = require('uni-id-common')
-const { success, normalizeError, AppError, API_CODE, requireString } = require('love-common')
+const { success, normalizeError, AppError, API_CODE, requireString, resolveSpaceOwnerUid } = require('love-common')
 const db = uniCloud.database()
 const dbCmd = db.command
 const moments = db.collection('moments')
@@ -48,9 +48,10 @@ module.exports = {
   async list(params = {}) {
     try {
       const auth = await requireAuth(this)
+      const ownerUid = await resolveSpaceOwnerUid(auth.uid, params)
       const month = typeof params.month === 'string' && /^\d{4}-\d{2}$/.test(params.month) ? params.month : null
       const cursor = typeof params.cursor === 'string' && params.cursor ? params.cursor : null
-      const where = { creatorUid: auth.uid, status: 'active' }
+      const where = { creatorUid: ownerUid, status: 'active' }
       if (month) where.occurredMonth = month
       if (cursor) where._id = dbCmd.lt(cursor)
       const result = await moments.where(where).orderBy('occurredAt', 'desc').orderBy('_id', 'desc').limit(PAGE_SIZE + 1).get()
@@ -66,11 +67,12 @@ module.exports = {
   async detail(params = {}) {
     try {
       const auth = await requireAuth(this)
+      const ownerUid = await resolveSpaceOwnerUid(auth.uid, params)
       const id = requireString(params.id, '时刻ID')
       const result = await moments.doc(id).get()
       const item = result.data && result.data[0]
       if (!item || item.status !== 'active') throw new AppError(API_CODE.NOT_FOUND, '时刻不存在')
-      if (item.creatorUid !== auth.uid) throw new AppError(API_CODE.FORBIDDEN, '无权访问该时刻')
+      if (item.creatorUid !== ownerUid) throw new AppError(API_CODE.FORBIDDEN, '无权访问该时刻')
       return success(toClient(item))
     } catch (error) {
       return normalizeError(error)
@@ -80,6 +82,7 @@ module.exports = {
   async create(params = {}) {
     try {
       const auth = await requireAuth(this)
+      const ownerUid = await resolveSpaceOwnerUid(auth.uid, params)
       const content = requireString(params.content, '内容', { maxLength: 2000 })
       if (!MOODS.includes(params.mood)) throw new AppError(API_CODE.INVALID_PARAMS, '心情不正确')
       const occurredAt = Number(params.occurredAt)
@@ -88,7 +91,9 @@ module.exports = {
       const title = typeof params.title === 'string' && params.title.trim() ? params.title.trim().slice(0, 30) : ''
       const now = Date.now()
       const record = {
-        creatorUid: auth.uid,
+        creatorUid: ownerUid,
+        createdByUid: auth.uid,
+        updatedByUid: auth.uid,
         title: title || content.slice(0, 30),
         titleCustomized: title.length > 0,
         content,
@@ -112,14 +117,15 @@ module.exports = {
   async update(params = {}) {
     try {
       const auth = await requireAuth(this)
+      const ownerUid = await resolveSpaceOwnerUid(auth.uid, params)
       const id = requireString(params.id, '时刻ID')
       const revision = Number(params.revision)
       if (!Number.isInteger(revision) || revision < 1) throw new AppError(API_CODE.INVALID_PARAMS, '版本号不正确')
       const existingResult = await moments.doc(id).get()
       const existing = existingResult.data && existingResult.data[0]
       if (!existing || existing.status !== 'active') throw new AppError(API_CODE.NOT_FOUND, '时刻不存在')
-      if (existing.creatorUid !== auth.uid) throw new AppError(API_CODE.FORBIDDEN, '无权修改该时刻')
-      const updateData = { updatedAt: Date.now(), revision: dbCmd.inc(1) }
+      if (existing.creatorUid !== ownerUid) throw new AppError(API_CODE.FORBIDDEN, '无权修改该时刻')
+      const updateData = { updatedByUid: auth.uid, updatedAt: Date.now(), revision: dbCmd.inc(1) }
       if (params.content !== undefined) updateData.content = requireString(params.content, '内容', { maxLength: 2000 })
       if (params.mood !== undefined) {
         if (!MOODS.includes(params.mood)) throw new AppError(API_CODE.INVALID_PARAMS, '心情不正确')
@@ -137,7 +143,7 @@ module.exports = {
         updateData.title = title || (params.content || existing.content).slice(0, 30)
         updateData.titleCustomized = title.length > 0
       }
-      const updated = await moments.where({ _id: id, revision }).update(updateData)
+      const updated = await moments.where({ _id: id, creatorUid: ownerUid, revision }).update(updateData)
       if (!updated.updated) throw new AppError(API_CODE.REVISION_CONFLICT, '数据已被修改，请刷新后重试')
       return success({ _id: id })
     } catch (error) {
@@ -148,12 +154,13 @@ module.exports = {
   async remove(params = {}) {
     try {
       const auth = await requireAuth(this)
+      const ownerUid = await resolveSpaceOwnerUid(auth.uid, params)
       const id = requireString(params.id, '时刻ID')
       const existingResult = await moments.doc(id).get()
       const existing = existingResult.data && existingResult.data[0]
       if (!existing || existing.status !== 'active') throw new AppError(API_CODE.NOT_FOUND, '时刻不存在')
-      if (existing.creatorUid !== auth.uid) throw new AppError(API_CODE.FORBIDDEN, '无权删除该时刻')
-      await moments.doc(id).update({ status: 'deleted', deletedAt: Date.now(), updatedAt: Date.now(), revision: dbCmd.inc(1) })
+      if (existing.creatorUid !== ownerUid) throw new AppError(API_CODE.FORBIDDEN, '无权删除该时刻')
+      await moments.where({ _id: id, creatorUid: ownerUid }).update({ status: 'deleted', deletedAt: Date.now(), updatedByUid: auth.uid, updatedAt: Date.now(), revision: dbCmd.inc(1) })
       return success({ _id: id })
     } catch (error) {
       return normalizeError(error)

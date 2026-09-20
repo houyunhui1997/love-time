@@ -236,8 +236,8 @@ function goBack() { uni.navigateBack({ fail: () => uni.redirectTo({ url: '/pages
 <style scoped lang="scss">
 .edit-page { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--love-color-bg); color: var(--love-color-text); }
 .edit-page::before { position: absolute; inset: 0 0 auto; height: 560rpx; background: linear-gradient(180deg,#fff0ec 0%,rgba(255,246,241,.72) 54%,rgba(251,247,242,0) 100%); content: ''; pointer-events: none; }
-.nav-bar { position: relative; z-index: 3; display: flex; height: calc(var(--menu-top) + var(--menu-height) + 92rpx); flex: none; align-items: flex-start; padding: var(--menu-top) 34rpx 0; }
-.nav-back { display: flex; width: 76rpx; height: var(--menu-height); align-items: center; }
+.nav-bar { box-sizing: content-box; position: relative; z-index: 3; flex-shrink: 0; display: flex; align-items: flex-start; padding: var(--menu-top) 34rpx 16rpx; }
+.nav-back { position: absolute; top: var(--menu-top); left: 26rpx; display: flex; width: 64rpx; height: var(--menu-height); align-items: center; }
 .nav-copy { min-width: 0; flex: 1; padding-top: 2rpx; text-align: center; }
 .nav-title { display: block; color: #3f3028; font-size: 32rpx; font-weight: 700; line-height: var(--menu-height); }
 .nav-subtitle { display: block; margin-top: 9rpx; color: #8d8179; font-size: 22rpx; }

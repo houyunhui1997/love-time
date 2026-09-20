@@ -1,18 +1,19 @@
 'use strict'
 
 const uniIdCommon = require('uni-id-common')
-const { success, normalizeError, AppError, API_CODE, requireString } = require('love-common')
+const { success, normalizeError, AppError, API_CODE, requireString, resolveSpaceOwnerUid } = require('love-common')
 const db = uniCloud.database()
 const collection = db.collection('wish-lists')
 
 const fail = message => { throw new AppError(API_CODE.INVALID_PARAMS, message) }
 const conflict = () => { throw new AppError(API_CODE.REVISION_CONFLICT, '心愿已更新，请刷新后重新操作') }
 
-async function load(context) {
+async function load(context, params = {}) {
   const auth = await context.uniIdCommon.checkToken(context.getUniIdToken())
   if (auth.errCode || !auth.uid) throw new AppError(API_CODE.UNAUTHORIZED, '登录状态已失效，请重新连接')
-  const result = await collection.doc(auth.uid).get()
-  return { uid: auth.uid, journal: result.data[0] || null }
+  const ownerUid = await resolveSpaceOwnerUid(auth.uid, params)
+  const result = await collection.doc(ownerUid).get()
+  return { uid: ownerUid, actorUid: auth.uid, journal: result.data[0] || null }
 }
 
 function toClient(journal) {
@@ -47,9 +48,9 @@ module.exports = {
     this.uniIdCommon = uniIdCommon.createInstance({ clientInfo: this.getClientInfo() })
   },
 
-  async get() {
+  async get(params = {}) {
     try {
-      return success(toClient((await load(this)).journal))
+      return success(toClient((await load(this, params)).journal))
     } catch (error) {
       return normalizeError(error)
     }
@@ -57,7 +58,7 @@ module.exports = {
 
   async save(params = {}) {
     try {
-      const { uid, journal } = await load(this)
+      const { uid, actorUid, journal } = await load(this, params)
       const currentRevision = journal ? journal.revision : 0
       if (!Number.isInteger(params.revision) || params.revision !== currentRevision) conflict()
       if (typeof params.id !== 'string' || !/^[a-zA-Z0-9_-]{8,80}$/.test(params.id)) fail('心愿标识不正确')
@@ -89,7 +90,7 @@ module.exports = {
       }
 
       if (records.length > 500) fail('已达到 500 条心愿上限')
-      const next = { records, revision: currentRevision + 1, updatedAt: Date.now() }
+      const next = { ownerUid: uid, updatedByUid: actorUid, records, revision: currentRevision + 1, updatedAt: Date.now() }
       if (journal) {
         const result = await collection.where({ _id: uid, revision: currentRevision }).update(next)
         if (!result.updated) conflict()

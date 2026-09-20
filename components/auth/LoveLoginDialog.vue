@@ -9,9 +9,9 @@
           src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/login/login-heart-emblem.png"
           mode="aspectFit"
         />
-        <text class="dialog-title">{{ isEditing ? '编辑恋爱资料' : '完善资料' }}</text>
+        <text class="dialog-title">{{ isEditing ? '编辑个人资料' : '完善个人资料' }}</text>
         <text class="dialog-subtitle">
-          {{ isEditing ? '更新你的个人资料和恋爱日期' : '记录重要日子，留住恋爱时光' }}
+          {{ isEditing ? '更新你的头像和昵称' : '设置头像和昵称，让对方认出你' }}
         </text>
       </view>
 
@@ -42,31 +42,6 @@
             placeholder-class="input-placeholder"
           />
         </view>
-        <picker mode="date" :value="loveStartDate" :end="today" @change="onDateChange">
-          <view class="profile-field">
-            <view class="field-label">
-              <uni-icons type="calendar-filled" size="18" color="#b29b8d" />
-              <text>在一起日期</text>
-            </view>
-            <view class="field-value">
-              <text :class="{ placeholder: !loveStartDate }">{{ displayStartDate }}</text>
-              <uni-icons type="right" size="16" color="#b2a198" />
-            </view>
-          </view>
-        </picker>
-        <view class="profile-field">
-          <view class="field-label">
-            <uni-icons type="heart-filled" size="18" color="#b29b8d" />
-            <text>对方称呼</text>
-          </view>
-          <input
-            v-model="partnerName"
-            class="partner-input"
-            maxlength="12"
-            placeholder="选填"
-            placeholder-class="input-placeholder"
-          />
-        </view>
       </view>
 
       <button class="login-button" :disabled="submitting || loadingData" @tap="confirmProfile">
@@ -85,12 +60,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import LoveLoading from '@/components/base/LoveLoading.vue'
-import { formatBusinessDate } from '@/utils/date'
 import {
   getMyAccountProfile,
-  getMyLoveProfile,
-  saveMyCompleteProfile,
-  type CompleteProfileResult
+  saveMyAccountProfile,
+  type AccountProfile
 } from '@/services/profile'
 
 const props = defineProps<{
@@ -99,7 +72,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: boolean): void
-  (event: 'success', result: CompleteProfileResult): void
+  (event: 'success', result: AccountProfile): void
 }>()
 
 const submitting = ref(false)
@@ -107,12 +80,8 @@ const loadingData = ref(false)
 const nickname = ref('')
 const avatarTempPath = ref('')
 const existingAvatarFileId = ref('')
-const loveStartDate = ref('')
-const partnerName = ref('')
 const isEditing = ref(false)
-const today = formatBusinessDate(new Date())
 const avatarPreview = computed(() => avatarTempPath.value || existingAvatarFileId.value)
-const displayStartDate = computed(() => loveStartDate.value ? loveStartDate.value.replace(/-/g, '.') : '请选择')
 const isShortScreen = Number(uni.getSystemInfoSync().windowHeight || 0) < 720
 let tabBarHidden = false
 
@@ -158,21 +127,17 @@ function resetForm() {
   nickname.value = ''
   avatarTempPath.value = ''
   existingAvatarFileId.value = ''
-  loveStartDate.value = ''
-  partnerName.value = ''
   isEditing.value = false
 }
 
 async function loadForm() {
   loadingData.value = true
   try {
-    const [account, profile] = await Promise.all([getMyAccountProfile(), getMyLoveProfile()])
+    const account = await getMyAccountProfile()
     nickname.value = account.nickname || ''
     existingAvatarFileId.value = account.avatarFileId || ''
     avatarTempPath.value = ''
-    loveStartDate.value = profile?.loveStartDate || ''
-    partnerName.value = profile?.partnerName || ''
-    isEditing.value = Boolean(profile?.loveStartDate)
+    isEditing.value = Boolean(account.nickname || account.avatarFileId)
   } catch (error) {
     uni.showToast({ title: error instanceof Error ? error.message : '资料读取失败', icon: 'none' })
   } finally {
@@ -180,24 +145,17 @@ async function loadForm() {
   }
 }
 
-function onDateChange(event: any) {
-  loveStartDate.value = event?.detail?.value || ''
-}
-
 async function confirmProfile() {
   if (!avatarPreview.value) return uni.showToast({ title: '请选择头像', icon: 'none' })
   if (!nickname.value.trim()) return uni.showToast({ title: '请输入昵称', icon: 'none' })
-  if (!loveStartDate.value) return uni.showToast({ title: '请选择在一起日期', icon: 'none' })
   if (submitting.value) return
 
   submitting.value = true
   try {
     const avatarFileId = await uploadAvatar()
-    const result = await saveMyCompleteProfile({
+    const result = await saveMyAccountProfile({
       nickname: nickname.value.trim(),
-      avatarFileId,
-      loveStartDate: loveStartDate.value,
-      partnerName: partnerName.value.trim()
+      avatarFileId
     })
     const successMessage = isEditing.value ? '资料已保存' : '登录成功'
     emit('success', result)
@@ -381,7 +339,6 @@ async function confirmProfile() {
 
 .field-value { gap: 8rpx; }
 .placeholder { color: #b2a198; }
-.partner-input { width: 260rpx; height: 100%; color: #5d4c42; font-size: 24rpx; text-align: right; }
 
 .login-button {
   position: relative;

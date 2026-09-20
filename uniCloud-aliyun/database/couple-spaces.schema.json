@@ -1,0 +1,17 @@
+{
+  "bsonType": "object",
+  "description": "情侣空间，主键与所有者用户ID一致",
+  "required": ["ownerUid", "inviteCode", "status", "createdAt", "updatedAt"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false, "count": false },
+  "properties": {
+    "_id": { "description": "空间所有者用户ID" },
+    "ownerUid": { "bsonType": "string" },
+    "inviteCode": { "bsonType": "string", "pattern": "^[a-f0-9]{24}$" },
+    "memberUid": { "bsonType": ["string", "null"] },
+    "joinedOwnerUid": { "bsonType": ["string", "null"], "description": "当前用户作为成员加入的空间所有者" },
+    "joiningOwnerUid": { "bsonType": ["string", "null"], "description": "加入过程中的原子占位" },
+    "status": { "bsonType": "string", "enum": ["active", "disabled"] },
+    "createdAt": { "bsonType": "long" },
+    "updatedAt": { "bsonType": "long" }
+  }
+}

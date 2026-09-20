@@ -214,8 +214,8 @@ function goBack() {
 <style scoped lang="scss">
 .plan-page { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--love-color-bg); color: var(--love-color-text); }
 .plan-page::before { position: absolute; inset: 0 0 auto; height: 560rpx; background: linear-gradient(180deg, #fff0ec 0%, rgba(255,246,241,.72) 54%, rgba(251,247,242,0) 100%); content: ''; pointer-events: none; }
-.nav-bar { position: relative; z-index: 3; display: flex; height: calc(var(--menu-top) + var(--menu-height)); flex: none; align-items: center; padding: var(--menu-top) 42rpx 0; }
-.nav-back { display: flex; width: 62rpx; height: var(--menu-height); align-items: center; justify-content: flex-start; }
+.nav-bar { box-sizing: content-box; position: relative; z-index: 3; flex-shrink: 0; padding-top: var(--menu-top); height: var(--menu-height); display: flex; align-items: center; justify-content: center; }
+.nav-back { position: absolute; left: 26rpx; bottom: 0; display: flex; width: 64rpx; height: var(--menu-height); align-items: center; }
 .page-heading { position: relative; z-index: 2; display: flex; height: 150rpx; flex: none; align-items: flex-start; padding: 12rpx 42rpx 0; }
 .page-title { display: block; color: #38291f; font-size: 48rpx; font-weight: 700; line-height: 1.3; }
 .page-subtitle { display: block; margin-top: 8rpx; color: #94877d; font-size: 25rpx; }

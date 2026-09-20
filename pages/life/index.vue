@@ -59,6 +59,11 @@ interface LifeTool {
   description: string
   image: string
   route?: string
+  miniProgram?: {
+    appId: string
+    path: string
+    envVersion: 'release' | 'trial' | 'develop'
+  }
 }
 
 interface LifeCategory {
@@ -97,7 +102,16 @@ const categories: LifeCategory[] = [
     name: '轻松互动',
     description: '给平凡日常添一点新鲜感',
     tools: [
-      { name: '今天吃什么', description: '一起挑喜欢的晚餐', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/dinner-picker.png' }
+      {
+        name: '今天吃什么',
+        description: '一起挑喜欢的晚餐',
+        image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/dinner-picker.png',
+        miniProgram: {
+          appId: 'wx0846fd82e87e7cae',
+          path: 'pages/recipe/index',
+          envVersion: 'release'
+        }
+      }
       // { name: '约会灵感', description: '发现下一次心动', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/date-ideas.png' },
       // { name: '每日一问', description: '每天更了解彼此', image: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/life/daily-question.png' }
     ]
@@ -136,6 +150,18 @@ const pageStyle = {
 function openTool(tool: LifeTool) {
   if (tool.route) {
     uni.navigateTo({ url: tool.route })
+    return
+  }
+  if (tool.miniProgram) {
+    uni.navigateToMiniProgram({
+      appId: tool.miniProgram.appId,
+      path: tool.miniProgram.path,
+      envVersion: tool.miniProgram.envVersion,
+      fail: (error) => {
+        if (/cancel/i.test(error?.errMsg || '')) return
+        uni.showToast({ title: '暂时无法打开半半私厨，请稍后重试', icon: 'none' })
+      }
+    })
     return
   }
   uni.showToast({ title: `${tool.name}敬请期待`, icon: 'none' })

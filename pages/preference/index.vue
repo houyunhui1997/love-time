@@ -64,20 +64,24 @@ function goBack() {
   pointer-events: none;
 }
 .nav-bar {
+  box-sizing: content-box;
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
   display: flex;
-  height: calc(var(--menu-top) + var(--menu-height));
-  flex: none;
   align-items: center;
-  padding: var(--menu-top) 42rpx 0;
+  justify-content: center;
+  padding-top: var(--menu-top);
+  height: var(--menu-height);
 }
 .nav-back {
+  position: absolute;
+  left: 26rpx;
+  bottom: 0;
   display: flex;
-  width: 62rpx;
+  width: 64rpx;
   height: var(--menu-height);
   align-items: center;
-  justify-content: flex-start;
 }
 .preference-panel-host {
   display: flex;

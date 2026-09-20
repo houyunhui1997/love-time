@@ -8,11 +8,30 @@
         <text class="eyebrow">LOVE TIME</text> -->
       </view>
       <view v-if="isLoggedIn" class="identity">
-        <button class="avatar-button" aria-label="编辑头像和恋爱资料" @tap="openProfileDialog">
-          <image class="account-avatar" :src="accountAvatar" mode="aspectFill" @error="avatarFailed = true" />
-        </button>
-        <text class="identity-name">{{ accountName }}</text>
-        <text class="identity-status">{{ profile ? '' : '已临时登录' }}</text>
+        <view class="identity-row">
+          <view class="identity-col">
+            <button class="avatar-button" aria-label="编辑头像和昵称" @tap="openProfileDialog">
+              <image class="account-avatar" :src="accountAvatar" mode="aspectFill" @error="avatarFailed = true" />
+            </button>
+            <text class="identity-name">{{ accountName }}</text>
+            <text class="identity-status"></text>
+          </view>
+
+          <view class="identity-link"><uni-icons type="heart-filled" size="22" color="#e8a49b" /></view>
+
+          <view class="identity-col">
+            <!-- 已绑定：无论是邀请方还是加入方，都展示唯一的另一半 -->
+            <button v-if="spacePartner" class="avatar-button" aria-label="查看情侣空间" @tap="openCoupleSpace">
+              <image class="account-avatar" :src="partnerAvatar" mode="aspectFill" />
+            </button>
+            <!-- 未绑定：允许邀请一位成员 -->
+            <button v-else class="avatar-invite" open-type="share" data-share="invite" aria-label="邀请另一半加入">
+              <uni-icons type="personadd-filled" size="34" color="#d87973" />
+            </button>
+            <text class="identity-name">{{ spacePartner ? spacePartner.nickname : '邀请另一半' }}</text>
+            <!-- <text class="identity-status">{{ spacePartner ? partnerRoleLabel : '点击头像邀请' }}</text> -->
+          </view>
+        </view>
       </view>
       <view v-else class="identity identity-offline">
         <image class="offline-emblem" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/heart-emblem.png" mode="aspectFit" />
@@ -22,6 +41,22 @@
 
     <view class="page-content">
       <template v-if="isLoggedIn">
+        <!-- 「我的空间」切换卡已移除：功能与「情侣空间」页一致，切换入口保留在 pages/couple/index。
+        <view v-if="spaceOverview" class="space-switcher">
+          <view class="space-heading">
+            <view>
+              <text class="space-kicker">当前空间</text>
+              <text class="space-title">{{ currentSpaceName }}</text>
+            </view>
+            <view class="space-manage" @tap="openMenu('情侣空间')">管理</view>
+          </view>
+          <view v-if="spaceOverview.joinedOwner" class="space-options">
+            <view class="space-option" :class="{ active: !isForeignSpace }" @tap="switchSpace(spaceOverview.owner.uid)">我的空间</view>
+            <view class="space-option" :class="{ active: isForeignSpace }" @tap="switchSpace(spaceOverview.joinedOwner.uid)">{{ spaceOverview.joinedOwner.nickname }}的空间</view>
+          </view>
+          <text v-if="isForeignSpace" class="space-tip">你正在管理对方的记录，新增和修改都会保存在这个空间</text>
+        </view>
+        -->
         <view class="archive-card" :class="{ 'has-profile': profile }">
           <image class="archive-emblem" src="https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/heart-emblem.png" mode="aspectFit" />
           <view class="archive-content">
@@ -29,9 +64,8 @@
             <template v-if="profile">
               <view class="days-line"><text class="days-label">已经相伴</text><text class="days-number">{{ togetherDays }}</text><text class="days-unit">天</text></view>
               <text class="archive-subtitle">始于 {{ displayStartDate }}</text>
-              <text v-if="profile.partnerName" class="partner-name">与 {{ profile.partnerName }} 慢慢相伴</text>
             </template>
-            <button v-if="!profile" class="profile-button" @tap="openProfileDialog">
+            <button v-if="!profile" class="profile-button" @tap="openCoupleSpace">
               <text>完善资料</text>
               <uni-icons type="right" size="18" color="#fffaf5" />
             </button>
@@ -84,11 +118,11 @@ import { onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import LoveLoginDialog from '@/components/auth/LoveLoginDialog.vue'
 import { differenceInCalendarDays, formatBusinessDate } from '@/utils/date'
 import { restoreWeixinSession } from '@/services/auth'
+import { getSpaceOverview, type SpaceOverview } from '@/services/space'
 import {
   getMyAccountProfile,
   getMyLoveProfile,
   type AccountProfile,
-  type CompleteProfileResult,
   type LoveProfile
 } from '@/services/profile'
 
@@ -96,6 +130,7 @@ const isLoggedIn = ref(false)
 const showProfileDialog = ref(false)
 const account = ref<AccountProfile | null>(null)
 const profile = ref<LoveProfile | null>(null)
+const spaceOverview = ref<SpaceOverview | null>(null)
 
 const systemInfo = uni.getSystemInfoSync()
 
@@ -129,7 +164,7 @@ interface MenuItem {
 
 const menuGroups: MenuItem[][] = [
   [
-    { label: '恋爱资料', icon: 'contact', caption: '个人资料与恋爱日期' },
+    { label: '情侣空间', icon: 'staff', caption: '绑定关系与恋爱资料' },
     { label: '通知消息管理', icon: 'notification', caption: '纪念日订阅提醒' },
     { label: '分享恋时光', icon: 'redo', caption: '把这份爱分享给更多人', share: true }
   ],
@@ -140,6 +175,7 @@ const menuGroups: MenuItem[][] = [
 
 const routeByMenu: Record<string, string> = {
   通知消息管理: '/pages/settings/reminder',
+  情侣空间: '/pages/couple/index',
   隐私与协议: '/pages/settings/privacy',
   关于恋时光: '/pages/settings/about'
 }
@@ -147,27 +183,48 @@ const routeByMenu: Record<string, string> = {
 const today = formatBusinessDate(new Date())
 const accountName = computed(() => account.value?.nickname || '恋时光用户')
 const avatarFailed = ref(false)
-const accountAvatar = computed(() => !avatarFailed.value && account.value?.avatarFileId || 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/default-avatar.png')
+const fallbackAvatar = 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/profile/companion/default-avatar.png'
+const accountAvatar = computed(() => !avatarFailed.value && account.value?.avatarFileId || fallbackAvatar)
+// 一对一关系的另一半：邀请方看到成员，加入方看到空间所有者。
+const spacePartner = computed(() => spaceOverview.value?.member || spaceOverview.value?.joinedOwner || null)
+const partnerRoleLabel = computed(() => spaceOverview.value?.joinedOwner ? '空间所有者' : '空间成员')
+const partnerAvatar = computed(() => spacePartner.value?.avatarFileId || fallbackAvatar)
 const togetherDays = computed(() => profile.value ? Math.max(0, differenceInCalendarDays(today, profile.value.loveStartDate)) : 0)
 const displayStartDate = computed(() => profile.value?.loveStartDate.replace(/-/g, '.') || '')
 
 onShow(loadProfilePage)
 
-onShareAppMessage(() => ({
-  title: '恋时光 · 记录爱，纪念每一个值得的日子',
-  path: '/pages/anniversary/index',
-  imageUrl: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/official-account-cover.jpg'
-}))
+// 分享：默认分享小程序；若通过邀请按钮触发（shareType=invite），分享空间邀请链接（与情侣空间页一致）
+onShareAppMessage((params) => {
+  const isInvite = params?.target?.dataset?.share === 'invite'
+  if (isInvite && spaceOverview.value && !spacePartner.value) {
+    return {
+      title: `${spaceOverview.value.owner.nickname || '我'}邀请你加入情侣空间`,
+      path: `/pages/couple/join?code=${encodeURIComponent(spaceOverview.value.inviteCode)}`
+    }
+  }
+  return {
+    title: '恋时光 · 记录爱，纪念每一个值得的日子',
+    path: '/pages/anniversary/index',
+    imageUrl: 'https://mp-a2c13372-7ceb-425d-bcf7-06fc03fcfe22.cdn.bspapp.com/static/official-account-cover.jpg'
+  }
+})
+
+function openCoupleSpace() {
+  uni.navigateTo({ url: '/pages/couple/index' })
+}
 
 async function loadProfilePage() {
   isLoggedIn.value = await restoreWeixinSession()
   if (!isLoggedIn.value) {
     account.value = null
     profile.value = null
+    spaceOverview.value = null
     return
   }
 
   try {
+    spaceOverview.value = await getSpaceOverview()
     const [accountResult, profileResult] = await Promise.all([
       getMyAccountProfile(),
       getMyLoveProfile()
@@ -185,18 +242,12 @@ function openProfileDialog() {
   showProfileDialog.value = true
 }
 
-function onProfileSaved(result: CompleteProfileResult) {
+function onProfileSaved(result: AccountProfile) {
   avatarFailed.value = false
-  account.value = result.account
-  profile.value = result.profile
+  account.value = result
 }
 
 function openMenu(label: string) {
-  if (label === '恋爱资料') {
-    openProfileDialog()
-    return
-  }
-
   const url = routeByMenu[label]
   if (url) uni.navigateTo({ url })
 }
@@ -217,12 +268,32 @@ function openMenu(label: string) {
 .page-title { color: #503d32; font-size: 38rpx; font-weight: 650; line-height: var(--menu-height); white-space: nowrap; }
 .eyebrow { color: #d77d73; font-size: 18rpx; font-weight: 500; letter-spacing: 4rpx; white-space: nowrap; }
 .identity { position: relative; display: flex; flex-direction: column; align-items: center; padding: 24rpx 36rpx 0; }
+/* 顶部双头像左右分布布局 */
+.identity-row { display: flex; width: 100%; max-width: 560rpx; align-items: flex-start; justify-content: space-between; }
+.identity-col { display: flex; min-width: 0; flex: 1; flex-direction: column; align-items: center; }
+.identity-col:first-child { margin-right: 20rpx; }
+.identity-col:last-child { margin-left: 20rpx; }
+.identity-link { display: flex; height: 148rpx; flex: none; align-items: center; justify-content: center; }
+/* 虚线占位邀请框 */
+.avatar-invite { display: flex; width: 148rpx; height: 148rpx; flex-shrink: 0; align-items: center; justify-content: center; margin: 0; padding: 0; border: 3rpx dashed #e5b9ac; border-radius: 50%; background: rgba(255, 252, 247, .6); box-shadow: 0 7rpx 16rpx rgba(124, 93, 66, .08); line-height: 1; }
+.avatar-invite::after { border: 0; }
+.avatar-invite:active { background: rgba(253, 236, 230, .8); }
 .avatar-button { width: 208rpx; height: 208rpx; flex-shrink: 0; margin: 0; padding: 0; overflow: hidden; border: 6rpx solid #fffcf7; border-radius: 50%; background: #e2dfc6; box-shadow: 0 7rpx 16rpx rgba(124, 93, 66, .14); line-height: 1; }
 .avatar-button::after { border: 0; }
 .account-avatar { display: block; width: 100%; height: 100%; }
 .identity-name { display: block; max-width: 80%; margin-top: 18rpx; overflow: hidden; color: #503d32; font-size: 34rpx; font-weight: 600; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
 .identity-status { margin-top: 8rpx; color: #a28c7c; font-size: 25rpx; line-height: 1.5; }
 .page-content { padding: 0 34rpx; }
+.space-switcher { margin-top: 20rpx; padding: 22rpx 26rpx; border: 1rpx solid rgba(255,255,255,.7); border-radius: 26rpx; background: rgba(255,255,255,.48); box-shadow: 0 12rpx 30rpx rgba(112,82,63,.07); backdrop-filter: blur(14rpx); }
+.space-heading { display: flex; align-items: center; justify-content: space-between; }
+.space-kicker, .space-title { display: block; }
+.space-kicker { color: #aa8f7e; font-size: 20rpx; }
+.space-title { margin-top: 4rpx; color: #5d4638; font-size: 28rpx; font-weight: 600; }
+.space-manage { padding: 10rpx 20rpx; border-radius: 24rpx; background: #f8e7df; color: #cf746d; font-size: 22rpx; }
+.space-options { display: flex; gap: 10rpx; margin-top: 18rpx; padding: 6rpx; border-radius: 24rpx; background: rgba(225,210,198,.42); }
+.space-option { flex: 1; padding: 13rpx 10rpx; overflow: hidden; border-radius: 20rpx; color: #9b8373; font-size: 22rpx; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.space-option.active { background: rgba(255,252,248,.9); color: #cf746d; box-shadow: 0 4rpx 12rpx rgba(95,70,54,.08); }
+.space-tip { display: block; margin-top: 14rpx; color: #a08170; font-size: 20rpx; line-height: 1.5; }
 .archive-card { position: relative; box-sizing: border-box; min-height: 286rpx; margin-top: 28rpx; overflow: hidden; padding: 36rpx 36rpx 32rpx; border-radius: 30rpx; background: rgba(242, 231, 216, .35); }
 .archive-emblem { position: absolute; top: 44rpx; right: 18rpx; width: 292rpx; height: 208rpx; pointer-events: none; }
 .archive-content { position: relative; z-index: 1; }
@@ -269,13 +340,15 @@ function openMenu(label: string) {
   .archive-subtitle { font-size: 23rpx; }
 }
 /* Fit the available mini-program viewport; the native tab bar owns its safe area. */
-.profile-page { display: flex; height: 100vh; min-height: 0; flex-direction: column; padding-bottom: 8rpx; }
+.profile-page { display: flex; min-height: 100vh; flex-direction: column; padding-bottom: 8rpx; }
 .profile-header { flex-shrink: 0; padding-bottom: 24rpx; }
 .header-sprig { position: absolute; bottom: 8rpx; width: 126rpx; height: 178rpx; pointer-events: none; }
 .header-sprig-left { left: -24rpx; transform: rotate(12deg); }
 .header-sprig-right { right: -24rpx; transform: scaleX(-1) rotate(12deg); }
 .identity { padding-top: 16rpx; }
 .avatar-button { width: 148rpx; height: 148rpx; border-width: 4rpx; }
+.identity-link { height: 148rpx; }
+.avatar-invite { width: 148rpx; height: 148rpx; }
 .identity-name { margin-top: 12rpx; font-size: 30rpx; }
 .identity-status { margin-top: 4rpx; font-size: 21rpx; }
 .page-content { display: flex; flex: 1; min-height: 0; flex-direction: column; }
@@ -303,6 +376,9 @@ function openMenu(label: string) {
   .profile-header { padding-bottom: 18rpx; }
   .identity { padding-top: 10rpx; }
   .avatar-button { width: 126rpx; height: 126rpx; }
+  .identity-link { height: 126rpx; }
+  .identity-link uni-icons { transform: scale(.86); }
+  .avatar-invite { width: 126rpx; height: 126rpx; }
   .identity-name { margin-top: 8rpx; font-size: 28rpx; }
   .identity-status { font-size: 20rpx; }
   .archive-card { margin-top: 16rpx; min-height: 216rpx; padding-top: 22rpx; padding-bottom: 20rpx; }
@@ -316,4 +392,3 @@ function openMenu(label: string) {
   .page-signature { min-height: 60rpx; }
 }
 </style>
-

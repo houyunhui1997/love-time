@@ -1,0 +1,14 @@
+{
+  "bsonType": "object",
+  "description": "用户加入的情侣空间，一个用户至多一条有效记录",
+  "required": ["memberUid", "ownerUid", "status", "createdAt", "updatedAt"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false, "count": false },
+  "properties": {
+    "_id": { "description": "成员用户ID" },
+    "memberUid": { "bsonType": "string" },
+    "ownerUid": { "bsonType": "string" },
+    "status": { "bsonType": "string", "enum": ["joining", "active"] },
+    "createdAt": { "bsonType": "long" },
+    "updatedAt": { "bsonType": "long" }
+  }
+}

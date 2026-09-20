@@ -28,6 +28,16 @@ export interface SaveCompleteProfileParams {
   loveStartDate: string
 }
 
+export interface SaveAccountProfileParams {
+  nickname: string
+  avatarFileId?: string | null
+}
+
+export interface SaveLoveProfileParams {
+  partnerName?: string
+  loveStartDate: string
+}
+
 export interface CompleteProfileResult {
   account: AccountProfile
   profile: LoveProfile
@@ -36,6 +46,8 @@ export interface CompleteProfileResult {
 interface ProfileCloudObject {
   getAccount(): Promise<ApiResponse<AccountProfile | null>>
   getMine(): Promise<ApiResponse<LoveProfile | null>>
+  saveAccount(params: SaveAccountProfileParams): Promise<ApiResponse<AccountProfile | null>>
+  saveLoveProfile(params: SaveLoveProfileParams): Promise<ApiResponse<LoveProfile | null>>
   saveCompleteProfile(params: SaveCompleteProfileParams): Promise<ApiResponse<CompleteProfileResult | null>>
 }
 
@@ -52,6 +64,18 @@ export async function getMyAccountProfile(): Promise<AccountProfile> {
 export async function getMyLoveProfile(): Promise<LoveProfile | null> {
   const result = await getProfileCloudObject().getMine()
   if (result.code !== 0) throw new Error(result.message || '恋爱档案读取失败')
+  return result.data
+}
+
+export async function saveMyAccountProfile(params: SaveAccountProfileParams): Promise<AccountProfile> {
+  const result = await getProfileCloudObject().saveAccount(params)
+  if (result.code !== 0 || !result.data) throw new Error(result.message || '个人资料保存失败')
+  return result.data
+}
+
+export async function saveMyLoveProfile(params: SaveLoveProfileParams): Promise<LoveProfile> {
+  const result = await getProfileCloudObject().saveLoveProfile(params)
+  if (result.code !== 0 || !result.data) throw new Error(result.message || '恋爱资料保存失败')
   return result.data
 }
 

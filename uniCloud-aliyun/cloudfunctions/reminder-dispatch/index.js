@@ -30,7 +30,7 @@ exports.main = async (event, context) => {
       const clip = value => Array.from(value).slice(0, 20).join('')
       const response = await uniCloud.httpclient.request('https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=' + encodeURIComponent(token), {
         method: 'POST', contentType: 'json', dataType: 'json', timeout: 10000,
-        data: { touser: sub.openid, template_id: sub.templateId, page: 'pages/anniversary/detail?id=' + encodeURIComponent(item._id), miniprogram_state: process.env.LOVE_WX_MESSAGE_STATE || 'formal', lang: 'zh_CN', data: {
+        data: { touser: sub.openid, template_id: sub.templateId, page: 'pages/anniversary/detail?id=' + encodeURIComponent(item._id) + '&space=' + encodeURIComponent(item.creatorUid), miniprogram_state: process.env.LOVE_WX_MESSAGE_STATE || 'formal', lang: 'zh_CN', data: {
           thing1: { value: clip(sub.offset === 0 ? '今天是你设置的纪念日' : '距离纪念日还有' + sub.offset + '天') },
           thing3: { value: clip(item.title) }, time2: { value: sub.label }
         } }

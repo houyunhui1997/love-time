@@ -48,4 +48,33 @@ function requireString(value, fieldName, options = {}) {
   return normalized
 }
 
-module.exports = { API_CODE, AppError, createRequestId, success, normalizeError, requireString }
+async function resolveSpaceOwnerUid(authUid, params = {}) {
+  const requested = typeof params.spaceOwnerUid === 'string' && params.spaceOwnerUid
+    ? params.spaceOwnerUid
+    : authUid
+
+  const db = uniCloud.database()
+  const membership = (await db.collection('couple-memberships').doc(authUid).get()).data[0]
+  if (membership && membership.status === 'active') {
+    const joinedSpace = (await db.collection('couple-spaces').where({
+      ownerUid: membership.ownerUid,
+      memberUid: authUid,
+      status: 'active'
+    }).limit(1).get()).data[0]
+    if (joinedSpace) return membership.ownerUid
+  }
+
+  if (requested === authUid) return authUid
+
+  const result = await db.collection('couple-spaces').where({
+    ownerUid: requested,
+    memberUid: authUid,
+    status: 'active'
+  }).limit(1).get()
+  if (!result.data || !result.data.length) {
+    throw new AppError(API_CODE.FORBIDDEN, '你已无法访问这个空间，请切换回自己的空间')
+  }
+  return requested
+}
+
+module.exports = { API_CODE, AppError, createRequestId, success, normalizeError, requireString, resolveSpaceOwnerUid }

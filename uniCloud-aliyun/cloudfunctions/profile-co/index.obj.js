@@ -1,7 +1,7 @@
 'use strict'
 
 const uniIdCommon = require('uni-id-common')
-const { success, normalizeError, AppError, API_CODE } = require('love-common')
+const { success, normalizeError, AppError, API_CODE, resolveSpaceOwnerUid } = require('love-common')
 const db = uniCloud.database()
 const dbCmd = db.command
 const profiles = db.collection('love-profiles')
@@ -52,6 +52,45 @@ function validateDate(value) {
   return value
 }
 
+async function saveAccount(authUid, params) {
+  const nickname = typeof params.nickname === 'string' ? params.nickname.trim() : ''
+  const avatarFileId = typeof params.avatarFileId === 'string' && params.avatarFileId ? params.avatarFileId : null
+  if (!nickname || nickname.length > 20) throw new AppError(API_CODE.INVALID_PARAMS, '请输入1至20个字符的昵称')
+  const userResult = await users.doc(authUid).get()
+  const user = userResult.data && userResult.data[0]
+  if (!user) throw new AppError(API_CODE.NOT_FOUND, '账号不存在')
+  const savedAvatarFileId = avatarFileId || user.avatar || null
+  if (!savedAvatarFileId) throw new AppError(API_CODE.INVALID_PARAMS, '请选择头像')
+  await users.doc(authUid).update({ nickname, avatar: savedAvatarFileId })
+  return { nickname, gender: normalizeGender(user.gender), avatarFileId: savedAvatarFileId }
+}
+
+async function saveLoveProfile(authUid, ownerUid, params) {
+  const loveStartDate = validateDate(params.loveStartDate)
+  const now = Date.now()
+  const existingResult = await profiles.where({ ownerUid }).limit(1).get()
+  const existing = existingResult.data[0]
+  const partnerName = typeof params.partnerName === 'string'
+    ? params.partnerName.trim()
+    : (existing && existing.partnerName || '')
+  if (partnerName.length > 12) throw new AppError(API_CODE.INVALID_PARAMS, '对方称呼不能超过12个字符')
+  const profileData = { partnerName, loveStartDate, updatedByUid: authUid, updatedAt: now }
+  if (existing) {
+    await profiles.doc(existing._id).update({
+      ...profileData,
+      selfName: dbCmd.remove(),
+      selfGender: dbCmd.remove(),
+      selfAvatarFileId: dbCmd.remove(),
+      partnerAvatarFileId: dbCmd.remove(),
+      revision: dbCmd.inc(1)
+    })
+    return toClientProfile({ ...existing, ...profileData, revision: (existing.revision || 0) + 1 })
+  }
+  const profile = { ownerUid, createdByUid: authUid, ...profileData, theme: 'warm-paper', createdAt: now, revision: 1 }
+  const inserted = await profiles.add(profile)
+  return toClientProfile({ _id: inserted.id, ...profile })
+}
+
 module.exports = {
   async _before() {
     this.uniIdCommon = uniIdCommon.createInstance({ clientInfo: this.getClientInfo() })
@@ -69,11 +108,31 @@ module.exports = {
     }
   },
 
-  async getMine() {
+  async getMine(params = {}) {
     try {
       const auth = await requireAuth(this)
-      const existing = await profiles.where({ ownerUid: auth.uid }).limit(1).get()
+      const ownerUid = await resolveSpaceOwnerUid(auth.uid, params)
+      const existing = await profiles.where({ ownerUid }).limit(1).get()
       return success(toClientProfile(existing.data[0] || null))
+    } catch (error) {
+      return normalizeError(error)
+    }
+  },
+
+  async saveAccount(params = {}) {
+    try {
+      const auth = await requireAuth(this)
+      return success(await saveAccount(auth.uid, params))
+    } catch (error) {
+      return normalizeError(error)
+    }
+  },
+
+  async saveLoveProfile(params = {}) {
+    try {
+      const auth = await requireAuth(this)
+      const ownerUid = await resolveSpaceOwnerUid(auth.uid, params)
+      return success(await saveLoveProfile(auth.uid, ownerUid, params))
     } catch (error) {
       return normalizeError(error)
     }
@@ -82,6 +141,7 @@ module.exports = {
   async saveCompleteProfile(params = {}) {
     try {
       const auth = await requireAuth(this)
+      const ownerUid = await resolveSpaceOwnerUid(auth.uid, params)
       const nickname = typeof params.nickname === 'string' ? params.nickname.trim() : ''
       const avatarFileId = typeof params.avatarFileId === 'string' && params.avatarFileId ? params.avatarFileId : null
       const partnerName = typeof params.partnerName === 'string' ? params.partnerName.trim() : ''
@@ -99,11 +159,12 @@ module.exports = {
       await users.doc(auth.uid).update(userUpdate)
 
       const now = Date.now()
-      const existingResult = await profiles.where({ ownerUid: auth.uid }).limit(1).get()
+      const existingResult = await profiles.where({ ownerUid }).limit(1).get()
       const existing = existingResult.data[0]
       const profileData = {
         partnerName,
         loveStartDate,
+        updatedByUid: auth.uid,
         updatedAt: now
       }
 
@@ -120,7 +181,8 @@ module.exports = {
         savedProfile = { ...existing, ...profileData, revision: (existing.revision || 0) + 1 }
       } else {
         const profile = {
-          ownerUid: auth.uid,
+          ownerUid,
+          createdByUid: auth.uid,
           ...profileData,
           theme: 'warm-paper',
           createdAt: now,

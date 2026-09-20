@@ -1,29 +1,32 @@
 'use strict'
 const crypto = require('crypto')
-const { success, normalizeError, AppError, API_CODE } = require('love-common')
+const { success, normalizeError, AppError, API_CODE, resolveSpaceOwnerUid } = require('love-common')
 const { TEMPLATE_ID, nextPlan, config } = require('love-reminder')
 const db = uniCloud.database()
 const records = db.collection('anniversaries')
-async function owned(context, id) {
+async function owned(context, params = {}) {
   const auth = await context.auth.checkToken(context.getUniIdToken())
   if (auth.errCode || !auth.uid) throw new AppError(API_CODE.UNAUTHORIZED, '请重新登录')
+  const id = params.id
   if (typeof id !== 'string' || !id) throw new AppError(API_CODE.INVALID_PARAMS, '纪念日不存在')
+  const ownerUid = await resolveSpaceOwnerUid(auth.uid, params)
   const item = (await records.doc(id).get()).data[0]
-  if (!item || item.creatorUid !== auth.uid || item.status !== 'active') throw new AppError(API_CODE.NOT_FOUND, '纪念日不存在')
-  return item
+  if (!item || item.creatorUid !== ownerUid || item.status !== 'active') throw new AppError(API_CODE.NOT_FOUND, '纪念日不存在')
+  return { item, auth }
 }
 module.exports = {
   _before() { this.auth = require('uni-id-common').createInstance({ clientInfo: this.getClientInfo() }) },
   template() { return success({ templateId: TEMPLATE_ID }) },
-  async prepare({ id } = {}) {
+  async prepare(params = {}) {
     try {
-      const item = await owned(this, id)
+      const id = params.id
+      const { item, auth } = await owned(this, params)
       const current = item.subscription || {}
       if (['pending', 'sending', 'unknown'].includes(current.status)) return success({ templateId: TEMPLATE_ID, status: current.status, label: current.label || '', available: false })
       const plan = nextPlan(item)
       if (!plan) return success({ templateId: TEMPLATE_ID, status: current.status || 'none', available: false, label: '', message: '当前设置为不提醒，请选择提醒时间。' })
       config()
-      const user = (await db.collection('uni-id-users').doc(item.creatorUid).get()).data[0]
+      const user = (await db.collection('uni-id-users').doc(auth.uid).get()).data[0]
       const client = this.getClientInfo()
       const openids = user && user.wx_openid || {}
       const openid = openids['mp_' + (client.appId || client.appid)] || openids.mp
@@ -37,9 +40,10 @@ module.exports = {
       return success({ templateId: TEMPLATE_ID, status: 'prepared', available: true, label: plan.label, nonce })
     } catch (error) { return normalizeError(error) }
   },
-  async confirm({ id, nonce } = {}) {
+  async confirm(params = {}) {
     try {
-      const item = await owned(this, id)
+      const { id, nonce } = params
+      const { item } = await owned(this, params)
       const sub = item.subscription || {}
       if (typeof nonce !== 'string' || sub.nonce !== nonce) throw new AppError(API_CODE.INVALID_PARAMS, '订阅请求已失效，请重新打开页面')
       if (sub.status === 'pending') return success({ label: sub.label })
@@ -50,9 +54,10 @@ module.exports = {
       return success({ label: sub.label })
     } catch (error) { return normalizeError(error) }
   },
-  async cancel({ id } = {}) {
+  async cancel(params = {}) {
     try {
-      const item = await owned(this, id)
+      const id = params.id
+      const { item } = await owned(this, params)
       if (item.subscription && item.subscription.status === 'sending') throw new AppError(API_CODE.INVALID_PARAMS, '消息正在发送，请稍后刷新')
       const changed = await records.where({ _id: id, revision: item.revision, 'subscription.status': db.command.neq('sending') }).update({ subscription: { status: 'cancelled' } })
       if (!changed.updated) throw new AppError(API_CODE.REVISION_CONFLICT, '提醒状态已变化，请刷新后重试')

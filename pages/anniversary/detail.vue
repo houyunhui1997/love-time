@@ -85,6 +85,7 @@ import LoveLoading from '@/components/base/LoveLoading.vue'
 import { differenceInCalendarDays, formatBusinessDate, getNextYearlyOccurrence } from '@/utils/date'
 import { formatLunarDate, solarToLunar } from '@/utils/lunar'
 import { getAnniversary, removeAnniversary, type AnniversaryListItem } from '@/services/anniversary'
+import { switchToSpace } from '@/services/space'
 
 const anniversary = ref<AnniversaryListItem | null>(null)
 const loading = ref(false)
@@ -214,6 +215,7 @@ onLoad((options) => {
     return
   }
 
+  if (typeof options.space === 'string' && options.space) switchToSpace(options.space)
   anniversaryId.value = options.id
 })
 

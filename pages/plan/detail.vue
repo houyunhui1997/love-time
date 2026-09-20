@@ -179,8 +179,9 @@ function goBack() { uni.navigateBack({ fail: () => uni.redirectTo({ url: '/pages
 <style scoped lang="scss">
 .detail-page { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--love-color-bg); color: var(--love-color-text); }
 .detail-page::before { position: absolute; inset: 0 0 auto; height: 560rpx; background: linear-gradient(180deg,#fff0ec 0%,rgba(255,246,241,.72) 54%,rgba(251,247,242,0) 100%); content: ''; pointer-events: none; }
-.nav-bar { position: relative; z-index: 3; display: flex; height: calc(var(--menu-top) + var(--menu-height) + 24rpx); flex: none; align-items: center; padding: var(--menu-top) 34rpx 24rpx; }
-.nav-back, .nav-more { display: flex; width: 70rpx; height: var(--menu-height); align-items: center; }
+.nav-bar { box-sizing: content-box; position: relative; z-index: 3; flex-shrink: 0; padding-top: var(--menu-top); height: calc(var(--menu-height) + 24rpx); display: flex; align-items: center; padding-bottom: 24rpx; padding-left: 26rpx; padding-right: 26rpx; }
+.nav-back { position: absolute; left: 26rpx; bottom: 24rpx; display: flex; width: 64rpx; height: var(--menu-height); align-items: center; }
+.nav-more { position: absolute; right: 26rpx; bottom: 24rpx; display: flex; width: 70rpx; height: var(--menu-height); align-items: center; justify-content: flex-end; }
 .nav-title { flex: 1; color: #49372e; font-size: 30rpx; font-weight: 700; line-height: var(--menu-height); text-align: center; }
 .nav-more { justify-content: flex-end; }
 .detail-scroll { position: relative; z-index: 2; min-height: 0; flex: 1; }

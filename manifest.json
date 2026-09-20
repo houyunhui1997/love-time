@@ -54,6 +54,9 @@
         "setting" : {
             "urlCheck" : false
         },
+        "navigateToMiniProgramAppIdList" : [
+            "wx0846fd82e87e7cae"
+        ],
         "usingComponents" : true
     },
     "mp-alipay" : {
